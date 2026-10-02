@@ -79,3 +79,48 @@ fun CartScreen(vm: DeliveryViewModel) {
     }
 }
 
+@Composable
+fun CheckoutScreen(vm: DeliveryViewModel) {
+    var addressId by rememberSaveable { mutableStateOf("") }
+    val quote = vm.quote
+    Page {
+        Heading(if (vm.route == "Payment") "Payment" else "The last little details")
+        Text("Deliver to", style = MaterialTheme.typography.headlineMedium)
+        vm.addresses.forEach { a ->
+            Row(
+                Modifier.fillMaxWidth().clickable { addressId = a.id },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = addressId == a.id, onClick = { addressId = a.id })
+                Column {
+                    Text(a.label, fontWeight = FontWeight.Bold)
+                    Text("${a.line}, ${a.city} ${a.postcode}", color = RestroTokens.muted)
+                }
+            }
+        }
+        TextButton(onClick = { vm.route = "Addresses" }) { Text("Manage addresses") }
+        quote?.let {
+            Glass(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    BillRow("Items (tax included)", it.subtotal)
+                    BillRow("Delivery", it.delivery)
+                    if (it.discount > 0) BillRow("Offer savings", -it.discount)
+                    HorizontalDivider()
+                    BillRow("Total", it.total)
+                }
+            }
+        }
+        Text("Cash on delivery", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(
+            "Pay when your order arrives. Online payments are currently unavailable.",
+            color = RestroTokens.muted,
+        )
+        Action(
+            if (vm.route == "Payment") "Place order · ${money(quote?.total ?: 0)}"
+            else "Continue to payment",
+            !vm.busy && quote != null && vm.addresses.any { it.id == addressId },
+        ) {
+            if (vm.route == "Payment") vm.checkout(addressId) else vm.route = "Payment"
+        }
+    }
+}
