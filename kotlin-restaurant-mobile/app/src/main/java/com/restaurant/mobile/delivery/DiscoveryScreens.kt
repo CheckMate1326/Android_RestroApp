@@ -285,3 +285,70 @@ fun RestaurantCard(r: Restaurant, vm: DeliveryViewModel, clickable: Boolean) {
     }
 }
 
+@Composable
+fun FoodScreen(vm: DeliveryViewModel) {
+    val dish = vm.catalog.dishes.find { it.id == vm.dishId } ?: return
+    var replaceCart by remember { mutableStateOf(false) }
+    var addons by rememberSaveable(dish.id) { mutableStateOf(emptyList<String>()) }
+    var quantity by rememberSaveable(dish.id) { mutableIntStateOf(1) }
+    Page {
+        Photo(
+            dish.image,
+            dish.name,
+            Modifier.fillMaxWidth().height(300.dp).clip(RestroTokens.shape),
+        )
+        Heading(dish.name, dish.description)
+        Text(money(dish.price), fontSize = 24.sp, color = RestroTokens.coral)
+        if (dish.addons.isNotEmpty())
+            Text("Make it yours", style = MaterialTheme.typography.headlineMedium)
+        dish.addons.forEach { addon ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = addon.id in addons,
+                    onCheckedChange = { addons = if (it) addons + addon.id else addons - addon.id },
+                )
+                Text(addon.name, Modifier.weight(1f))
+                Text("+ ${money(addon.price)}")
+            }
+        }
+        Quantity(
+            quantity,
+            { quantity = (quantity - 1).coerceAtLeast(1) },
+            { quantity = (quantity + 1).coerceAtMost(20) },
+        )
+        Action(
+            "Add to cart · ${money((dish.price+dish.addons.filter {it.id in addons}.sumOf {it.price})*quantity)}",
+            !vm.busy && dish.available,
+        ) {
+            if (
+                vm.cart.lines.any { line ->
+                    vm.catalog.dishes.find { it.id == line.dishId }?.restaurantId !=
+                        dish.restaurantId
+                }
+            )
+                replaceCart = true
+            else vm.add(dish, addons, quantity)
+        }
+    }
+    if (replaceCart)
+        AlertDialog(
+            onDismissRequest = { replaceCart = false },
+            title = { Text("Start a new bag?") },
+            text = {
+                Text("Your bag contains food from another restaurant. Replace it with this meal?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        replaceCart = false
+                        vm.changeCart(listOf(Line(dish.id, quantity, addons)), "Cart")
+                    }
+                ) {
+                    Text("Replace bag")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { replaceCart = false }) { Text("Keep my bag") }
+            },
+        )
+}
