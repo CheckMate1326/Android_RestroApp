@@ -103,3 +103,123 @@ fun AddressesScreen(vm: DeliveryViewModel) {
     }
 }
 
+@Composable
+fun ReviewsScreen(vm: DeliveryViewModel) {
+    var rating by rememberSaveable { mutableIntStateOf(5) }
+    var text by rememberSaveable { mutableStateOf("") }
+    Page {
+        Heading(if (vm.route == "Review") "How was your meal?" else "From the table")
+        if (vm.route == "Review") {
+            Row {
+                (1..5).forEach { n ->
+                    IconButton(onClick = { rating = n }) {
+                        Icon(
+                            if (n <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                            "$n stars",
+                            tint = RestroTokens.coral,
+                        )
+                    }
+                }
+            }
+            Field("Your review", text, { text = it })
+            Action("Publish review", !vm.busy && text.trim().length >= 3) {
+                vm.review(rating, text)
+            }
+        } else {
+            if (vm.reviews.isEmpty())
+                Text("No reviews yet. Reviews appear after a completed delivery.")
+            vm.reviews.forEach { r ->
+                Text("${r.rating} / 5 · ${r.author}", fontWeight = FontWeight.Bold)
+                Text(r.text)
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileScreen(vm: DeliveryViewModel) {
+    val p = vm.profile ?: return
+    val context = LocalContext.current
+    var name by rememberSaveable(p.id) { mutableStateOf(p.name) }
+    var phone by rememberSaveable(p.id) { mutableStateOf(p.phone) }
+    var logout by remember { mutableStateOf(false) }
+    Page {
+        Heading(
+            if (vm.route == "Settings") "Make yourself at home."
+            else if (vm.route == "Edit profile") "Your details"
+            else "Hello, ${p.name.substringBefore(' ')}."
+        )
+        when (vm.route) {
+            "Edit profile" -> {
+                Field("Name", name, { name = it })
+                Field("Phone", phone, { phone = it })
+                Text(p.email, color = RestroTokens.muted)
+                Action("Save profile", !vm.busy) {
+                    vm.saveProfile(p.copy(name = name, phone = phone))
+                }
+            }
+            "Settings" -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Reduce transparency")
+                        Text(
+                            "Stronger contrast, less blur",
+                            color = RestroTokens.muted,
+                            fontSize = 13.sp,
+                        )
+                    }
+                    Switch(
+                        checked = p.reducedGlass,
+                        onCheckedChange = { vm.saveProfile(p.copy(reducedGlass = it)) },
+                        enabled = !vm.busy,
+                    )
+                }
+                Text(
+                    "Your session is encrypted on this device. Sign out to revoke access.",
+                    color = RestroTokens.muted,
+                )
+            }
+            else -> {
+                Text(p.email, color = RestroTokens.muted)
+                listOf("Edit profile", "Addresses", "Favorites", "Orders", "Settings").forEach {
+                    route ->
+                    OutlinedButton(
+                        onClick = { vm.route = route },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                    ) {
+                        Text(route, Modifier.weight(1f))
+                        Icon(Icons.Default.ChevronRight, null)
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(context, com.restaurant.mobile.StaffActivity::class.java)
+                        )
+                    }
+                ) {
+                    Text("Restaurant staff")
+                }
+                TextButton(onClick = { logout = true }) { Text("Sign out") }
+            }
+        }
+    }
+    if (logout)
+        AlertDialog(
+            onDismissRequest = { logout = false },
+            title = { Text("Sign out of Restro?") },
+            text = { Text("Your saved cart and orders will be here when you sign in again.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        logout = false
+                        vm.logout()
+                    }
+                ) {
+                    Text("Sign out")
+                }
+            },
+            dismissButton = { TextButton(onClick = { logout = false }) { Text("Stay signed in") } },
+        )
+}
