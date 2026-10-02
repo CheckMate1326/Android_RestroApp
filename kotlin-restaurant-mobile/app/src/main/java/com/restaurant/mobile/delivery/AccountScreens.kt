@@ -1,5 +1,6 @@
 package com.restaurant.mobile.delivery
 
+import android.content.Intent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -138,6 +140,7 @@ fun ReviewsScreen(vm: DeliveryViewModel) {
 @Composable
 fun ProfileScreen(vm: DeliveryViewModel) {
     val p = vm.profile ?: return
+    val context = LocalContext.current
     var name by rememberSaveable(p.id) { mutableStateOf(p.name) }
     var phone by rememberSaveable(p.id) { mutableStateOf(p.phone) }
     var logout by remember { mutableStateOf(false) }
@@ -188,6 +191,15 @@ fun ProfileScreen(vm: DeliveryViewModel) {
                         Text(route, Modifier.weight(1f))
                         Icon(Icons.Default.ChevronRight, null)
                     }
+                }
+                TextButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(context, com.restaurant.mobile.StaffActivity::class.java)
+                        )
+                    }
+                ) {
+                    Text("Restaurant staff")
                 }
                 TextButton(onClick = { logout = true }) { Text("Sign out") }
             }

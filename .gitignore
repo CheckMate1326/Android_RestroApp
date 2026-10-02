@@ -37,3 +37,9 @@ yarn-error.log*
 
 # Temp files
 starter.zip
+/data/
+**/data/
+*.log
+**/local.properties
+**/*.before-restro
+.verification/

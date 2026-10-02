@@ -1,0 +1,279 @@
+{
+  "restaurants": [
+    {
+      "id": "lumiere",
+      "name": "Bistro Lumière",
+      "cuisine": "Indian · Tandoor · Comfort food",
+      "description": "Slow-cooked favourites, rich gravies and fresh breads straight from the tandoor.",
+      "image": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop",
+      "address": "12 Indiranagar 100ft Road, Bengaluru",
+      "latitude": 12.9784,
+      "longitude": 77.6408,
+      "deliveryMinutes": 30,
+      "deliveryFee": 3500,
+      "open": true
+    },
+    {
+      "id": "dakshin-plate",
+      "name": "The Dakshin Plate",
+      "cuisine": "South Indian · Coastal · Dosa",
+      "description": "Authentic ghee roasts, fluffy idlis and aromatic coastal delicacies made with heritage recipes.",
+      "image": "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=1200&auto=format&fit=crop",
+      "address": "45 Koramangala 5th Block, Bengaluru",
+      "latitude": 12.9352,
+      "longitude": 77.6245,
+      "deliveryMinutes": 25,
+      "deliveryFee": 2500,
+      "open": true
+    },
+    {
+      "id": "wok-and-roll",
+      "name": "Wok & Roll",
+      "cuisine": "Pan-Asian · Dim Sum · Noodles",
+      "description": "Sizzling wok bowls, handcrafted crystal dim sums and bold Asian street flavours.",
+      "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=1200&auto=format&fit=crop",
+      "address": "88 MG Road, Bengaluru",
+      "latitude": 12.9756,
+      "longitude": 77.6066,
+      "deliveryMinutes": 35,
+      "deliveryFee": 4000,
+      "open": true
+    },
+    {
+      "id": "rustico-pizza",
+      "name": "Rustico Woodfired Pizza",
+      "cuisine": "Italian · Artisan Pizza · Pasta",
+      "description": "Hand-stretched sourdough pizzas, homemade burrata and slow-simmered artisanal pasta.",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&auto=format&fit=crop",
+      "address": "21 Lavelle Road, Bengaluru",
+      "latitude": 12.9698,
+      "longitude": 77.5993,
+      "deliveryMinutes": 40,
+      "deliveryFee": 4500,
+      "open": true
+    },
+    {
+      "id": "sweet-tooth",
+      "name": "Sweet Tooth Patisserie",
+      "cuisine": "Desserts · Bakery · Shakes",
+      "description": "Decadent warm brownies, creamy artisanal cheesecakes and rich thick shakes.",
+      "image": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop",
+      "address": "15 Church Street, Bengaluru",
+      "latitude": 12.9748,
+      "longitude": 77.6074,
+      "deliveryMinutes": 20,
+      "deliveryFee": 2000,
+      "open": true
+    }
+  ],
+  "dishes": [
+    {
+      "id": "tikka",
+      "restaurantId": "lumiere",
+      "category": "Starters",
+      "name": "Paneer tikka",
+      "description": "Charred cottage cheese with peppers, warm spices and cooling mint chutney.",
+      "price": 25000,
+      "image": "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "naan", "name": "Garlic naan", "price": 6000 },
+        { "id": "chutney", "name": "Extra mint chutney", "price": 2000 }
+      ]
+    },
+    {
+      "id": "biryani",
+      "restaurantId": "lumiere",
+      "category": "Mains",
+      "name": "Chicken biryani",
+      "description": "Fragrant long-grain basmati, slow-cooked spiced chicken and refreshing cucumber raita.",
+      "price": 35000,
+      "image": "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=1000&auto=format&fit=crop",
+      "vegetarian": false,
+      "available": true,
+      "addons": [
+        { "id": "raita", "name": "Extra raita", "price": 4000 },
+        { "id": "salan", "name": "Mirchi ka salan", "price": 3000 }
+      ]
+    },
+    {
+      "id": "curry",
+      "restaurantId": "lumiere",
+      "category": "Mains",
+      "name": "Butter chicken",
+      "description": "Tender tandoor-roasted chicken simmered in a velvety tomato and butter gravy.",
+      "price": 38000,
+      "image": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=1000&auto=format&fit=crop",
+      "vegetarian": false,
+      "available": true,
+      "addons": [
+        { "id": "naan", "name": "Garlic naan", "price": 6000 },
+        { "id": "roti", "name": "Butter roti", "price": 3000 }
+      ]
+    },
+    {
+      "id": "dal-makhani",
+      "restaurantId": "lumiere",
+      "category": "Mains",
+      "name": "Dal Makhani",
+      "description": "Black lentils slow-cooked overnight with cream, butter and mild aromatic spices.",
+      "price": 24000,
+      "image": "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "jeera-rice", "name": "Jeera rice", "price": 8000 },
+        { "id": "naan", "name": "Garlic naan", "price": 6000 }
+      ]
+    },
+    {
+      "id": "masala-dosa",
+      "restaurantId": "dakshin-plate",
+      "category": "Mains",
+      "name": "Crispy Masala Dosa",
+      "description": "Golden rice crepe roasted in pure ghee, filled with spiced potato masala, served with 3 chutneys.",
+      "price": 14000,
+      "image": "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "sambar", "name": "Extra sambar bowl", "price": 2500 },
+        { "id": "podi", "name": "Gunpowder podi butter", "price": 3000 }
+      ]
+    },
+    {
+      "id": "idli-vada",
+      "restaurantId": "dakshin-plate",
+      "category": "Starters",
+      "name": "Ghee Idli & Medu Vada",
+      "description": "Two melt-in-mouth steamed idlis and one crispy medu vada with hot sambar and fresh coconut chutney.",
+      "price": 12000,
+      "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "extra-vada", "name": "Extra medu vada", "price": 4000 }
+      ]
+    },
+    {
+      "id": "filter-coffee",
+      "restaurantId": "dakshin-plate",
+      "category": "Beverages",
+      "name": "Filter Coffee",
+      "description": "Traditional South Indian frothy filter brew made with freshly roasted chicory beans and whole milk.",
+      "price": 6000,
+      "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": []
+    },
+    {
+      "id": "dim-sum",
+      "restaurantId": "wok-and-roll",
+      "category": "Starters",
+      "name": "Steamed Veg Dim Sum",
+      "description": "Delicate translucent parcels stuffed with wild mushrooms, water chestnuts and scallions.",
+      "price": 22000,
+      "image": "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "chilli-oil", "name": "House chilli crisp oil", "price": 2500 }
+      ]
+    },
+    {
+      "id": "schezwan-noodles",
+      "restaurantId": "wok-and-roll",
+      "category": "Mains",
+      "name": "Hakka Schezwan Noodles",
+      "description": "Wok-tossed noodles with shredded peppers, carrots, spring onions and fiery Schezwan sauce.",
+      "price": 21000,
+      "image": "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "paneer-topping", "name": "Spicy paneer cubes", "price": 5000 }
+      ]
+    },
+    {
+      "id": "margherita",
+      "restaurantId": "rustico-pizza",
+      "category": "Mains",
+      "name": "Classic Margherita Pizza",
+      "description": "San Marzano tomato base, fresh fior di latte mozzarella, extra virgin olive oil and sweet basil.",
+      "price": 32000,
+      "image": "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "extra-cheese", "name": "Extra mozzarella", "price": 6000 },
+        { "id": "olives", "name": "Kalamata olives", "price": 4000 }
+      ]
+    },
+    {
+      "id": "garlic-bread",
+      "restaurantId": "rustico-pizza",
+      "category": "Starters",
+      "name": "Cheesy Herb Garlic Bread",
+      "description": "Artisan sourdough baguette baked with roasted garlic herb butter and melted mozzarella.",
+      "price": 16000,
+      "image": "https://images.unsplash.com/photo-1619535860434-ba1d8fa12536?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "dip", "name": "Marinara dipping sauce", "price": 3000 }
+      ]
+    },
+    {
+      "id": "sizzling-brownie",
+      "restaurantId": "sweet-tooth",
+      "category": "Desserts",
+      "name": "Belgian Chocolate Brownie",
+      "description": "Fudgy warm chocolate brownie made with 70% dark Belgian chocolate and toasted walnuts.",
+      "price": 18000,
+      "image": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": [
+        { "id": "ice-cream", "name": "Vanilla bean gelato scoop", "price": 5000 },
+        { "id": "fudge", "name": "Extra hot fudge sauce", "price": 3000 }
+      ]
+    },
+    {
+      "id": "mango-shake",
+      "restaurantId": "sweet-tooth",
+      "category": "Beverages",
+      "name": "Fresh Alphonso Shake",
+      "description": "Creamy thick shake blended with pure Alphonso mango pulp, full-cream milk and pistachio flakes.",
+      "price": 15000,
+      "image": "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=1000&auto=format&fit=crop",
+      "vegetarian": true,
+      "available": true,
+      "addons": []
+    }
+  ],
+  "offers": [
+    {
+      "code": "WELCOME50",
+      "description": "50% off up to ₹100 on your first meal",
+      "minimum": 20000,
+      "discount": 10000,
+      "expiresAt": "2030-12-31T23:59:59Z"
+    },
+    {
+      "code": "RESTRO75",
+      "description": "Flat ₹75 off on orders above ₹300",
+      "minimum": 30000,
+      "discount": 7500,
+      "expiresAt": "2030-12-31T23:59:59Z"
+    },
+    {
+      "code": "FEAST100",
+      "description": "Save ₹100 on orders above ₹500",
+      "minimum": 50000,
+      "discount": 10000,
+      "expiresAt": "2030-12-31T23:59:59Z"
+    }
+  ]
+}

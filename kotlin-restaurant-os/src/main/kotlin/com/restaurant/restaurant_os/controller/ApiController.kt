@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = ["*"])
+
 class ApiController(private val repository: RestaurantRepository) {
 
     // Categories

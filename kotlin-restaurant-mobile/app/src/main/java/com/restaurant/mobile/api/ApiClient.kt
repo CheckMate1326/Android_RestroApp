@@ -9,12 +9,19 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object ApiClient {
-    // 10.0.2.2 points to host localhost from Android Emulator
-    private const val BASE_URL = "http://10.0.2.2:8080/api"
+    // Staff endpoints share the configured host and omit the customer "/delivery" suffix.
+    private val BASE_URL = com.restaurant.mobile.BuildConfig.API_URL.removeSuffix("/delivery")
+    @Volatile private var staffAuthorization: String? = null
+    suspend fun authenticateStaff(user: String, password: String): Boolean = withContext(Dispatchers.IO) {
+        staffAuthorization = "Basic " + android.util.Base64.encodeToString("$user:$password".toByteArray(), android.util.Base64.NO_WRAP)
+        try { httpGet("/analytics"); true } catch (_: Exception) { staffAuthorization = null; false }
+    }
+    fun clearStaffSession() { staffAuthorization = null }
 
     private fun httpGet(endpoint: String): String {
         val url = URL("$BASE_URL$endpoint")
         val conn = url.openConnection() as HttpURLConnection
+        staffAuthorization?.let { conn.setRequestProperty("Authorization", it) }
         conn.requestMethod = "GET"
         conn.connectTimeout = 3000
         conn.readTimeout = 3000
@@ -28,6 +35,7 @@ object ApiClient {
     private fun httpPost(endpoint: String, jsonBody: String): String {
         val url = URL("$BASE_URL$endpoint")
         val conn = url.openConnection() as HttpURLConnection
+        staffAuthorization?.let { conn.setRequestProperty("Authorization", it) }
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
         conn.doOutput = true
@@ -44,6 +52,7 @@ object ApiClient {
     private fun httpPut(endpoint: String, jsonBody: String): String {
         val url = URL("$BASE_URL$endpoint")
         val conn = url.openConnection() as HttpURLConnection
+        staffAuthorization?.let { conn.setRequestProperty("Authorization", it) }
         conn.requestMethod = "PUT"
         conn.setRequestProperty("Content-Type", "application/json")
         conn.doOutput = true

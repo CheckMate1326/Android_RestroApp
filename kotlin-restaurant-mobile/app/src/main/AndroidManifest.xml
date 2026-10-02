@@ -12,6 +12,7 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity android:name=".StaffActivity" android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

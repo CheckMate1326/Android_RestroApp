@@ -66,6 +66,7 @@ class RestaurantRepository {
 
     fun updateTableStatus(id: Long, status: String): DiningTable? {
         val table = diningTables[id] ?: return null
+        require(status in listOf("Available", "Occupied", "Reserved"))
         table.status = status
         table.updatedAt = Instant.now().toString()
         return table
@@ -103,6 +104,12 @@ class RestaurantRepository {
         paymentMethod: String,
         items: List<CartItemRequest>
     ): Order {
+        require(items.isNotEmpty() && items.size <= 50) { "Invalid cart" }
+        require(items.all { it.quantity in 1..20 && menuItems[it.menuItemId]?.isAvailable == true }) { "Invalid item" }
+        require(tableId == null || diningTables.containsKey(tableId))
+        require(customerId == null || customers.containsKey(customerId))
+        require(paymentMethod in listOf("Cash", "Card", "UPI"))
+        require(orderType in listOf("Dine-in", "Takeaway", "Delivery"))
         val orderId = orderIdGen.incrementAndGet()
 
         var calculatedTotal = 0.0

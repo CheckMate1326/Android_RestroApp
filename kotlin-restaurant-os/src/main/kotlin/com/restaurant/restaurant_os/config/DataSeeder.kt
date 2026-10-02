@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component
 class DataSeeder(private val repository: RestaurantRepository) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
-        println("🌱 Seeding initial Restaurant OS Kotlin data...")
+        if (System.getenv("RESTRO_SEED_DEMO") != "true") return
+        println("Seeding staff demonstration catalog" )
 
         // Categories
         val starters = repository.addCategory("Starters")
