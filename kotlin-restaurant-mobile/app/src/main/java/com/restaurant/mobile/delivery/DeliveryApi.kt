@@ -92,8 +92,8 @@ class DeliveryApi {
         withContext(Dispatchers.IO) {
             val connection = URL(BuildConfig.API_URL + path).openConnection() as HttpURLConnection
             connection.requestMethod = method
-            connection.connectTimeout = 10000
-            connection.readTimeout = 15000
+            connection.connectTimeout = 2000
+            connection.readTimeout = 3000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Accept", "application/json")
             token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }

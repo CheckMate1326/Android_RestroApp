@@ -2,9 +2,11 @@ package com.restaurant.mobile.delivery
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -206,6 +208,28 @@ fun CartScreen(vm: DeliveryViewModel) {
             }
         }
 
+        // Available Coupons
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val coupons = listOf(
+                "WELCOME50" to "₹50 OFF on first order",
+                "FEAST" to "₹50 OFF on orders above ₹200",
+                "FREEDEL" to "Free delivery on orders"
+            )
+            coupons.forEach { (code, desc) ->
+                SuggestionChip(
+                    onClick = {
+                        couponInput = code
+                        vm.applyCoupon(code)
+                    },
+                    label = { Text("$code · $desc", fontSize = 11.sp) },
+                    icon = { Icon(Icons.Default.LocalOffer, null, modifier = Modifier.size(14.dp), tint = RestroTokens.coral) }
+                )
+            }
+        }
+
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
 
         // Bill Breakdown
@@ -241,7 +265,10 @@ fun CartScreen(vm: DeliveryViewModel) {
 @Composable
 fun CheckoutScreen(vm: DeliveryViewModel) {
     var selectedAddressId by rememberSaveable {
-        mutableStateOf(vm.addresses.firstOrNull()?.id ?: "")
+        mutableStateOf(vm.addresses.firstOrNull()?.id ?: "addr-default")
+    }
+    var selectedPaymentMethod by rememberSaveable {
+        mutableStateOf("Cash on delivery")
     }
 
     if (vm.addresses.isNotEmpty() && (selectedAddressId.isBlank() || vm.addresses.none { it.id == selectedAddressId })) {
@@ -260,9 +287,21 @@ fun CheckoutScreen(vm: DeliveryViewModel) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("No address saved yet", color = RestroTokens.muted)
-                    Action("Add Delivery Address") {
-                        vm.route = "Edit address"
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Default Delivery Location", fontWeight = FontWeight.Bold)
+                            Text("Flat 402, Green Glen Layout, Bellandur, Bengaluru", color = RestroTokens.muted, fontSize = 13.sp)
+                        }
+                        Icon(Icons.Default.CheckCircle, null, tint = RestroTokens.green)
+                    }
+                    TextButton(onClick = { vm.route = "Edit address" }) {
+                        Icon(Icons.Default.AddLocationAlt, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Add custom address")
                     }
                 }
             }
@@ -300,22 +339,41 @@ fun CheckoutScreen(vm: DeliveryViewModel) {
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
 
-        Text("Payment Method", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Select Payment Method", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
-        Row(
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(RestroTokens.surface)
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(Icons.Default.Payments, null, tint = RestroTokens.coral)
-            Column(Modifier.weight(1f)) {
-                Text("Cash on Delivery (COD)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text("Pay with cash or UPI on delivery", fontSize = 12.sp, color = RestroTokens.muted)
+        val paymentOptions = listOf(
+            Triple("Cash on delivery", "Cash or UPI on Delivery", Icons.Default.Payments),
+            Triple("UPI", "Google Pay / PhonePe / Paytm / QR", Icons.Default.QrCodeScanner),
+            Triple("Card", "Credit / Debit Card (Visa, RuPay, MC)", Icons.Default.CreditCard)
+        )
+
+        paymentOptions.forEach { (methodKey, methodTitle, icon) ->
+            val isChosen = selectedPaymentMethod == methodKey
+            Row(
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { selectedPaymentMethod = methodKey }
+                    .background(if (isChosen) RestroTokens.coral.copy(alpha = 0.15f) else RestroTokens.surface)
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(icon, null, tint = if (isChosen) RestroTokens.coral else RestroTokens.muted)
+                Column(Modifier.weight(1f)) {
+                    Text(methodTitle, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        if (methodKey == "Cash on delivery") "Pay when driver reaches your doorstep"
+                        else "Instant secure instant checkout",
+                        fontSize = 12.sp,
+                        color = RestroTokens.muted
+                    )
+                }
+                RadioButton(
+                    selected = isChosen,
+                    onClick = { selectedPaymentMethod = methodKey },
+                    colors = RadioButtonDefaults.colors(selectedColor = RestroTokens.coral)
+                )
             }
-            Icon(Icons.Default.CheckCircle, null, tint = RestroTokens.green)
         }
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
@@ -325,9 +383,10 @@ fun CheckoutScreen(vm: DeliveryViewModel) {
 
         Action(
             label = if (quoteTotal > 0) "Place Order · ${money(quoteTotal)}" else "Place Order",
-            enabled = selectedAddressId.isNotBlank() && !vm.busy
+            enabled = !vm.busy
         ) {
-            vm.checkout(selectedAddressId)
+            val addrId = selectedAddressId.ifBlank { vm.addresses.firstOrNull()?.id ?: "addr-default" }
+            vm.checkout(addrId, selectedPaymentMethod)
         }
     }
 }
@@ -339,27 +398,54 @@ fun OrdersScreen(vm: DeliveryViewModel) {
         "Confirmation" -> {
             Page {
                 Column(
-                    Modifier.fillMaxWidth().padding(top = 24.dp),
+                    Modifier.fillMaxWidth().padding(top = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Box(
-                        Modifier.size(80.dp).clip(CircleShape).background(RestroTokens.green.copy(alpha = 0.2f)),
+                        Modifier.size(76.dp).clip(CircleShape).background(RestroTokens.green.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(48.dp), tint = RestroTokens.green)
+                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(44.dp), tint = RestroTokens.green)
                     }
                     Heading("Order Confirmed!", "Thank you for ordering with Restro.")
-                    Text("Order ID: #${vm.orderId}", fontWeight = FontWeight.Bold, color = RestroTokens.coral)
-                    Text("Estimated Delivery: 25 - 35 minutes", color = RestroTokens.muted, fontSize = 14.sp)
+                    Text("Order ID: #${vm.orderId}", fontWeight = FontWeight.Bold, color = RestroTokens.coral, fontSize = 17.sp)
 
-                    Spacer(Modifier.height(16.dp))
-                    Action("Track Your Order") {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Estimated Arrival", color = RestroTokens.muted, fontSize = 13.sp)
+                                Text("25 - 35 mins", fontWeight = FontWeight.Bold, color = RestroTokens.green)
+                            }
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Email Confirmation", color = RestroTokens.muted, fontSize = 13.sp)
+                                Text(vm.profile?.email ?: "aarav@example.com", fontSize = 12.sp, color = RestroTokens.coral)
+                            }
+                            Text(
+                                "An itemized bill and invoice notification has been dispatched to your email address.",
+                                fontSize = 12.sp,
+                                color = RestroTokens.muted
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    Action("Track Live Order on Map") {
                         vm.route = "Tracking"
                         vm.track()
                     }
                     TextButton(onClick = { vm.route = "Home" }) {
-                        Text("Continue Discovering")
+                        Text("Continue Discovering Dishes")
                     }
                 }
             }
@@ -368,6 +454,9 @@ fun OrdersScreen(vm: DeliveryViewModel) {
             val order = vm.orders.find { it.id == vm.orderId } ?: vm.orders.firstOrNull()
             Page {
                 Heading("Live Order Tracking", "Order #${order?.id ?: vm.orderId}")
+
+                // Interactive Animated Route Map
+                OrderTrackingRouteMap(order = order)
 
                 Card(
                     colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),
@@ -381,7 +470,18 @@ fun OrdersScreen(vm: DeliveryViewModel) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(order?.restaurantName ?: "Restaurant", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(order?.status ?: "In Progress", color = RestroTokens.coral, fontWeight = FontWeight.Bold)
+                            Surface(
+                                color = RestroTokens.coral.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    order?.status ?: "In Progress",
+                                    color = RestroTokens.coral,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
 
                         // Status Steps
@@ -407,17 +507,62 @@ fun OrdersScreen(vm: DeliveryViewModel) {
                     }
                 }
 
-                if (order != null) {
-                    Text("Delivery To", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("${order.address.label}: ${order.address.line}, ${order.address.city}", color = RestroTokens.muted)
+                // Delivery Partner Card
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            Modifier.size(46.dp).clip(CircleShape).background(RestroTokens.coral.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.TwoWheeler, null, tint = RestroTokens.coral)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Ramesh Kumar", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Delivery Partner · KA-03-EM-8821", fontSize = 12.sp, color = RestroTokens.muted)
+                            Text("Vaccinated & temperature verified", fontSize = 11.sp, color = RestroTokens.green)
+                        }
+                        IconButton(onClick = {}) {
+                            Icon(Icons.Default.Phone, "Call Rider", tint = RestroTokens.green)
+                        }
+                    }
                 }
 
-                Action("Refresh Status", enabled = !vm.busy) {
-                    vm.track()
+                if (order != null) {
+                    Text("Delivery Destination", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${order.address.label}: ${order.address.line}, ${order.address.city}", color = RestroTokens.muted, fontSize = 13.sp)
+                }
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { vm.track() },
+                        enabled = !vm.busy,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Refresh ETA")
+                    }
+                    if (order?.status != "Delivered" && order?.status != "Cancelled") {
+                        OutlinedButton(
+                            onClick = { if (order != null) vm.cancelOrder(order.id) },
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Cancel", color = Color.Red.copy(alpha = 0.8f))
+                        }
+                    }
                 }
 
                 TextButton(onClick = { vm.route = "Orders" }) {
-                    Text("View All Orders")
+                    Text("View All Past Orders")
                 }
             }
         }
@@ -442,15 +587,31 @@ fun OrdersScreen(vm: DeliveryViewModel) {
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Row(
                                     Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(order.restaurantName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                    Text(order.status, color = RestroTokens.coral, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Surface(
+                                        color = if (order.status == "Delivered") RestroTokens.green.copy(alpha = 0.2f)
+                                        else if (order.status == "Cancelled") Color.Red.copy(alpha = 0.2f)
+                                        else RestroTokens.coral.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            order.status,
+                                            color = if (order.status == "Delivered") RestroTokens.green
+                                            else if (order.status == "Cancelled") Color.Red
+                                            else RestroTokens.coral,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
-                                Text("Order #${order.id} · ${money(order.quote.total)}", color = RestroTokens.muted, fontSize = 13.sp)
+                                Text("Order #${order.id} · ${money(order.quote.total)} · ${order.quote.lines.size} items", color = RestroTokens.muted, fontSize = 13.sp)
 
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(
@@ -461,7 +622,16 @@ fun OrdersScreen(vm: DeliveryViewModel) {
                                         },
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Track")
+                                        Text("Track Map")
+                                    }
+                                    Button(
+                                        onClick = { vm.reorder(order) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = RestroTokens.surface)
+                                    ) {
+                                        Icon(Icons.Default.Replay, null, modifier = Modifier.size(14.dp), tint = RestroTokens.coral)
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Reorder", color = RestroTokens.text)
                                     }
                                     Button(
                                         onClick = {
@@ -489,11 +659,19 @@ fun AddressesScreen(vm: DeliveryViewModel) {
         var label by rememberSaveable { mutableStateOf("Home") }
         var line by rememberSaveable { mutableStateOf("") }
         var city by rememberSaveable { mutableStateOf("Bengaluru") }
-        var postcode by rememberSaveable { mutableStateOf("") }
-        var phone by rememberSaveable { mutableStateOf(vm.profile?.phone ?: "") }
+        var postcode by rememberSaveable { mutableStateOf("560103") }
+        var phone by rememberSaveable { mutableStateOf(vm.profile?.phone ?: "+91 98765 43210") }
 
         Page {
             Heading("Save Delivery Address", "Where should we deliver your food?")
+
+            // Interactive Mini Map Pin Selector
+            Text("Tap to Pin Exact Location", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            AddressPickerMiniMap(
+                onLocationSelected = { lat, lng, landmark ->
+                    line = if (line.isBlank()) "Near $landmark" else "$line, $landmark"
+                }
+            )
 
             Field("Label (e.g. Home, Office, Gym)", label, { label = it })
             Field("House / Flat / Street address", line, { line = it })

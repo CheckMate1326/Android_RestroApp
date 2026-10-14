@@ -51,9 +51,36 @@ object MockCatalog {
                 deliveryMinutes = 20,
                 deliveryFee = 2500,
                 open = true
+            ),
+            Restaurant(
+                id = "rest-4",
+                name = "Tokyo Zen & Bao",
+                cuisine = "Pan-Asian · Ramen · Dim Sum",
+                description = "Silky broth ramen bowls, handmade bao buns, and freshly rolled sushi.",
+                image = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&auto=format&fit=crop",
+                address = "22 100ft Road, HAL 2nd Stage, Indiranagar, Bengaluru",
+                latitude = 12.9784,
+                longitude = 77.6408,
+                deliveryMinutes = 35,
+                deliveryFee = 4000,
+                open = true
+            ),
+            Restaurant(
+                id = "rest-5",
+                name = "The Green Bowl & Bakery",
+                cuisine = "Healthy Bowls · Salads · Sourdough",
+                description = "Nutrient-packed grain bowls, crisp salads, organic smoothies and fresh sourdough.",
+                image = "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop",
+                address = "14 Vittal Mallya Road, Bengaluru",
+                latitude = 12.9719,
+                longitude = 77.5973,
+                deliveryMinutes = 20,
+                deliveryFee = 3000,
+                open = true
             )
         ),
         dishes = listOf(
+            // Restaurant 1: Bistro Lumière & Biryani
             Dish(
                 id = "dish-1",
                 restaurantId = "rest-1",
@@ -84,6 +111,69 @@ object MockCatalog {
                 )
             ),
             Dish(
+                id = "dish-101",
+                restaurantId = "rest-1",
+                category = "Starters",
+                name = "Melt-in-Mouth Galouti Kebab",
+                description = "Finely minced smoked patties infused with raw papaya and 32 aromatic herbs.",
+                price = 34000,
+                image = "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=800&auto=format&fit=crop",
+                vegetarian = false,
+                addons = listOf(AddOn("addon-101", "Mini Mint Chutney & Taftan", 3500))
+            ),
+            Dish(
+                id = "dish-102",
+                restaurantId = "rest-1",
+                category = "Starters",
+                name = "Tandoori Paneer Angara",
+                description = "Cottage cheese marinated in Kashmiri chili, charred in clay oven, served with glazed onions.",
+                price = 28000,
+                image = "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-103",
+                restaurantId = "rest-1",
+                category = "Curries",
+                name = "Royal Murgh Makhani",
+                description = "Clay oven roasted chicken braised in velvety tomato cashew gravy with fenugreek butter.",
+                price = 36000,
+                image = "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+            Dish(
+                id = "dish-104",
+                restaurantId = "rest-1",
+                category = "Curries",
+                name = "Dal Bukhara Slow-Simmered",
+                description = "Black lentils slow-cooked overnight with churned butter and hand-crushed tomatoes.",
+                price = 24000,
+                image = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-105",
+                restaurantId = "rest-1",
+                category = "Breads",
+                name = "Butter Garlic Naan",
+                description = "Fluffy leavened flatbread baked in tandoor, brushed with rich garlic herb butter.",
+                price = 7000,
+                image = "https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-106",
+                restaurantId = "rest-1",
+                category = "Desserts",
+                name = "Shahi Tukda with Kesari Rabri",
+                description = "Golden crisp ghee toast steeped in cardamom syrup and crowned with saffron reduction.",
+                price = 18000,
+                image = "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+
+            // Restaurant 2: Trattoria Milano
+            Dish(
                 id = "dish-3",
                 restaurantId = "rest-2",
                 category = "Pizza",
@@ -98,6 +188,58 @@ object MockCatalog {
                 )
             ),
             Dish(
+                id = "dish-201",
+                restaurantId = "rest-2",
+                category = "Pizza",
+                name = "Quattro Formaggi Bianca",
+                description = "Gorgonzola, fontina, smoked provolone and parmesan on hand-stretched sourdough crust.",
+                price = 52000,
+                image = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-202",
+                restaurantId = "rest-2",
+                category = "Pizza",
+                name = "Diavola Spicy Salami Pizza",
+                description = "Smoked mozzarella, spicy artisanal pepperoni, fresh oregano and hot pepper infused honey.",
+                price = 56000,
+                image = "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+            Dish(
+                id = "dish-203",
+                restaurantId = "rest-2",
+                category = "Pasta",
+                name = "Handmade Truffle Tagliatelle",
+                description = "Silk egg ribbons tossed in black truffle cream, aged Parmigiano-Reggiano and wild mushrooms.",
+                price = 48000,
+                image = "https://images.unsplash.com/photo-1621996346565-e3d5d628169e?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-204",
+                restaurantId = "rest-2",
+                category = "Starters",
+                name = "Bruschetta al Pomodoro",
+                description = "Toasted sourdough ciabatta topped with heirloom tomatoes, garlic, extra virgin olive oil and basil.",
+                price = 22000,
+                image = "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-205",
+                restaurantId = "rest-2",
+                category = "Desserts",
+                name = "Classic Espresso Tiramisu",
+                description = "Savoiardi ladyfingers soaked in dark roast espresso, layered with mascarpone cream and Valrhona cocoa.",
+                price = 26000,
+                image = "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+
+            // Restaurant 3: Dakshin Delights
+            Dish(
                 id = "dish-4",
                 restaurantId = "rest-3",
                 category = "Dosa",
@@ -110,6 +252,140 @@ object MockCatalog {
                     AddOn("addon-8", "Gunpowder (Podi) & Ghee", 3000),
                     AddOn("addon-9", "Extra Sambar Bowl", 2000)
                 )
+            ),
+            Dish(
+                id = "dish-301",
+                restaurantId = "rest-3",
+                category = "Dosa",
+                name = "Mysore Masala Dosa",
+                description = "Crispy crepe coated with spicy red chutney, stuffed with spiced potato mash and butter.",
+                price = 18000,
+                image = "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-302",
+                restaurantId = "rest-3",
+                category = "Tiffin",
+                name = "Steamed Thatte Idli with Podi",
+                description = "Fluffy giant Bangalore-style steamed rice cake drenched in hot spiced ghee and gunpowder.",
+                price = 12000,
+                image = "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-303",
+                restaurantId = "rest-3",
+                category = "Tiffin",
+                name = "Crispy Medu Vada (2 pcs)",
+                description = "Crispy deep-fried savory lentil doughnuts served with fresh coconut chutney and piping hot sambar.",
+                price = 11000,
+                image = "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-304",
+                restaurantId = "rest-3",
+                category = "Mains",
+                name = "Malabar Parotta with Veg Kurma",
+                description = "Layered flaky Kerala parottas paired with aromatic vegetable coconut kurma.",
+                price = 21000,
+                image = "https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-305",
+                restaurantId = "rest-3",
+                category = "Mains",
+                name = "Chettinad Pepper Chicken",
+                description = "Tender country chicken simmered in stone-ground black pepper, shallots and curry leaves.",
+                price = 31000,
+                image = "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+            Dish(
+                id = "dish-306",
+                restaurantId = "rest-3",
+                category = "Beverages",
+                name = "Mysore Pure Filter Coffee",
+                description = "Traditional freshly brewed chicory-infused decoction with frothy hot milk.",
+                price = 6000,
+                image = "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+
+            // Restaurant 4: Tokyo Zen & Bao
+            Dish(
+                id = "dish-401",
+                restaurantId = "rest-4",
+                category = "Ramen",
+                name = "Tokyo Shoyu Chashu Ramen",
+                description = "Artisanal wheat noodles in rich soy-broth with braised chashu, ajitsuke tamago egg, nori and menma.",
+                price = 42000,
+                image = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+            Dish(
+                id = "dish-402",
+                restaurantId = "rest-4",
+                category = "Ramen",
+                name = "Creamy Miso Veggie Ramen",
+                description = "Savory fermented soybean broth with bok choy, sweet corn, wood ear mushrooms and sesame chili oil.",
+                price = 36000,
+                image = "https://images.unsplash.com/photo-1552611052-33e04de081de?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-403",
+                restaurantId = "rest-4",
+                category = "Dim Sum",
+                name = "Truffle Edamame Dim Sum (4 pcs)",
+                description = "Translucent steamed dumplings filled with crushed edamame, water chestnut and white truffle oil.",
+                price = 32000,
+                image = "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-404",
+                restaurantId = "rest-4",
+                category = "Bao",
+                name = "Crispy Karaage Chicken Bao (2 pcs)",
+                description = "Steamed lotus leaf buns packed with crunchy Japanese fried chicken, spicy mayo and pickled daikon.",
+                price = 29000,
+                image = "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+
+            // Restaurant 5: The Green Bowl & Bakery
+            Dish(
+                id = "dish-501",
+                restaurantId = "rest-5",
+                category = "Bowls",
+                name = "Beet Hummus & Falafel Buddha Bowl",
+                description = "Herb quinoa, roasted chickpeas, avocado, baby spinach, beetroot tahini hummus and citrus vinaigrette.",
+                price = 32000,
+                image = "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop",
+                vegetarian = true
+            ),
+            Dish(
+                id = "dish-502",
+                restaurantId = "rest-5",
+                category = "Toast",
+                name = "Sourdough Avocado & Poached Egg",
+                description = "Toasted country sourdough, smashed Hass avocado, free-range poached egg, chili flakes and microgreens.",
+                price = 28000,
+                image = "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=800&auto=format&fit=crop",
+                vegetarian = false
+            ),
+            Dish(
+                id = "dish-503",
+                restaurantId = "rest-5",
+                category = "Smoothies",
+                name = "Wild Berry Acai Smoothie Bowl",
+                description = "Frozen acai blended with blueberries, almond milk, topped with house granola, chia and banana coins.",
+                price = 26000,
+                image = "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&auto=format&fit=crop",
+                vegetarian = true
             )
         )
     )
@@ -349,26 +625,35 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         category = ""
         query = ""
         route = "Restaurant"
-        run {
-            try {
-                reviews = api.call("/reviews/$id")
-            } catch (_: Exception) {
-                reviews = listOf(
-                    Review(
-                        orderId = "ord-1",
-                        restaurantId = id,
-                        author = "Priya N.",
-                        rating = 5,
-                        text = "Exquisite flavours and authentic spices! Arrived piping hot."
-                    ),
-                    Review(
-                        orderId = "ord-2",
-                        restaurantId = id,
-                        author = "Karthik R.",
-                        rating = 4,
-                        text = "Great packaging and generous portions. Will order again!"
-                    )
-                )
+        reviews = listOf(
+            Review(
+                orderId = "ord-1",
+                restaurantId = id,
+                author = "Priya N.",
+                rating = 5,
+                text = "Exquisite flavours and authentic spices! Arrived piping hot in eco-friendly packaging."
+            ),
+            Review(
+                orderId = "ord-2",
+                restaurantId = id,
+                author = "Karthik R.",
+                rating = 5,
+                text = "Generous portions, mouth-watering aroma. One of the best in Bengaluru!"
+            ),
+            Review(
+                orderId = "ord-3",
+                restaurantId = id,
+                author = "Ananya M.",
+                rating = 4,
+                text = "Super quick delivery and tasty dishes. Loved the packaging and attention to detail."
+            )
+        )
+        if (api.token != null) {
+            viewModelScope.launch {
+                try {
+                    val remoteReviews: List<Review> = api.call("/reviews/$id")
+                    if (remoteReviews.isNotEmpty()) reviews = remoteReviews
+                } catch (_: Exception) {}
             }
         }
     }
@@ -395,83 +680,127 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         changeCart(lines, "Cart")
     }
 
-    fun loadQuote() = run {
-        try {
-            quote = api.call("/quote")
-            addresses = api.call("/addresses")
-        } catch (_: Exception) {
-            val subtotal = cart.lines.sumOf { line ->
+    private fun computeQuote(): Quote {
+        val subtotal = cart.lines.sumOf { line ->
+            val dish = catalog.dishes.find { it.id == line.dishId }
+            val dishPrice = dish?.price ?: 0L
+            val addonsPrice = dish?.addons?.filter { it.id in line.addons }?.sumOf { it.price } ?: 0L
+            (dishPrice + addonsPrice) * line.quantity
+        }
+        val delivery = 4000L
+        val tax = (subtotal * 0.05).toLong()
+        val discount = if (cart.coupon.isNotBlank()) 5000L.coerceAtMost(subtotal) else 0L
+        val fallbackRestId = cart.lines.firstOrNull()?.let { line ->
+            catalog.dishes.find { it.id == line.dishId }?.restaurantId
+        } ?: "rest-1"
+        val activeRestaurantId = if (restaurantId.isNotBlank()) restaurantId else fallbackRestId
+        val q = Quote(
+            restaurantId = activeRestaurantId,
+            lines = cart.lines.map { line ->
                 val dish = catalog.dishes.find { it.id == line.dishId }
-                val dishPrice = dish?.price ?: 0L
-                val addonsPrice = dish?.addons?.filter { it.id in line.addons }?.sumOf { it.price } ?: 0L
-                (dishPrice + addonsPrice) * line.quantity
-            }
-            val delivery = 4000L
-            val tax = (subtotal * 0.05).toLong()
-            val discount = if (cart.coupon.isNotBlank()) 5000L.coerceAtMost(subtotal) else 0L
-            quote = Quote(
-                restaurantId = restaurantId.ifBlank { "rest-1" },
-                lines = cart.lines.map { line ->
-                    val dish = catalog.dishes.find { it.id == line.dishId }
-                    QuoteLine(
-                        dishId = line.dishId,
-                        name = dish?.name ?: "Item",
-                        quantity = line.quantity,
-                        addons = line.addons,
-                        unitPrice = dish?.price ?: 0L,
-                        total = (dish?.price ?: 0L) * line.quantity
-                    )
-                },
-                subtotal = subtotal,
-                tax = tax,
-                delivery = delivery,
-                discount = discount,
-                total = (subtotal + delivery + tax - discount).coerceAtLeast(0L)
-            )
-            if (addresses.isEmpty()) {
-                addresses = listOf(
-                    Address(
-                        id = "addr-default",
-                        label = "Home",
-                        line = "Flat 402, Green Glen Layout, Bellandur",
-                        city = "Bengaluru",
-                        postcode = "560103",
-                        phone = "+91 98765 43210"
-                    )
+                QuoteLine(
+                    dishId = line.dishId,
+                    name = dish?.name ?: "Item",
+                    quantity = line.quantity,
+                    addons = line.addons,
+                    unitPrice = dish?.price ?: 0L,
+                    total = (dish?.price ?: 0L) * line.quantity
                 )
-            }
+            },
+            subtotal = subtotal,
+            tax = tax,
+            delivery = delivery,
+            discount = discount,
+            total = (subtotal + delivery + tax - discount).coerceAtLeast(0L)
+        )
+        quote = q
+        return q
+    }
+
+    fun loadQuote() = run {
+        computeQuote()
+
+        if (addresses.isEmpty()) {
+            addresses = listOf(
+                Address(
+                    id = "addr-default",
+                    label = "Home",
+                    line = "Flat 402, Green Glen Layout, Bellandur",
+                    city = "Bengaluru",
+                    postcode = "560103",
+                    phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210"
+                )
+            )
+        }
+
+        if (api.token != null) {
+            try {
+                quote = api.call("/quote")
+                val remoteAddresses: List<Address> = api.call("/addresses")
+                if (remoteAddresses.isNotEmpty()) addresses = remoteAddresses
+            } catch (_: Exception) {}
         }
         route = "Checkout"
     }
 
-    fun checkout(addressId: String) = run {
-        val total = quote?.total ?: return@run
+    fun checkout(addressId: String, paymentMethod: String = "Cash on delivery") = run {
+        val currentQuote: Quote = quote ?: computeQuote()
+        val total = currentQuote.total
         val selectedAddr = addresses.find { it.id == addressId }
-            ?: Address(id = addressId, label = "Home", line = "Delivery Address", city = "Bengaluru", postcode = "560103", phone = "+91 98765 43210")
-        val rest = catalog.restaurants.find { it.id == restaurantId }
+            ?: addresses.firstOrNull()
+            ?: Address(
+                id = "addr-default",
+                label = "Home",
+                line = "Flat 402, Green Glen Layout, Bellandur",
+                city = "Bengaluru",
+                postcode = "560103",
+                phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210"
+            ).also { addresses = listOf(it) }
+
+        val activeRestId = if (restaurantId.isNotBlank()) restaurantId else currentQuote.restaurantId
+        val rest = catalog.restaurants.find { it.id == activeRestId }
         val restName = rest?.name ?: "Bistro Lumière & Biryani"
+        val paymentStatus = if (paymentMethod.contains("Cash", true)) "Due on delivery" else "Paid Online (Verified)"
+
         val fallbackOrder = DeliveryOrder(
             id = (1000 + (Math.random() * 9000).toInt()).toString(),
-            restaurantId = restaurantId.ifBlank { "rest-1" },
+            restaurantId = activeRestId,
             restaurantName = restName,
             address = selectedAddr,
-            quote = quote ?: Quote("rest-1", emptyList(), total, 0, 0, 0, total),
-            paymentMethod = "Cash on delivery",
+            quote = currentQuote,
+            paymentMethod = paymentMethod,
+            paymentStatus = paymentStatus,
             status = "Confirmed"
         )
-        try {
-            val order: DeliveryOrder =
-                api.call("/orders", "POST", Checkout(addressId, "Cash on delivery", checkoutKey, total))
-            orders = listOf(order) + orders.filterNot { it.id == order.id }
-            orderId = order.id
-        } catch (_: Exception) {
+
+        if (api.token != null) {
+            try {
+                val order: DeliveryOrder =
+                    api.call("/orders", "POST", Checkout(selectedAddr.id, paymentMethod, checkoutKey, total))
+                orders = listOf(order) + orders.filterNot { it.id == order.id }
+                orderId = order.id
+            } catch (_: Exception) {
+                orders = listOf(fallbackOrder) + orders
+                orderId = fallbackOrder.id
+            }
+        } else {
             orders = listOf(fallbackOrder) + orders
             orderId = fallbackOrder.id
         }
+
         cart = Cart()
         quote = null
         resetCheckoutKey()
         route = "Confirmation"
+    }
+
+    fun cancelOrder(id: String) {
+        orders = orders.map { if (it.id == id) it.copy(status = "Cancelled") else it }
+    }
+
+    fun reorder(order: DeliveryOrder) {
+        val newLines = order.quote.lines.map { Line(it.dishId, it.quantity, it.addons) }
+        changeCart(newLines, "Cart")
     }
 
     fun track() = run {
@@ -552,6 +881,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         error = null
         route =
             when (route) {
+                "Map" -> "Home"
                 "Food",
                 "Reviews" -> "Restaurant"
                 "Payment" -> "Checkout"

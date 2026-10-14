@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -108,25 +109,62 @@ fun Discovery(vm: DeliveryViewModel) {
         if (detail && restaurant != null)
             item {
                 RestaurantCard(restaurant, vm, false)
-                Row {
-                    TextButton(onClick = { vm.route = "Reviews" }) {
-                        Text("Read reviews (${vm.reviews.size})")
-                    }
-                    val context = LocalContext.current
-                    TextButton(
-                        onClick = {
-                            val uri =
-                                Uri.parse(
-                                    "geo:${restaurant.latitude},${restaurant.longitude}?q=${Uri.encode(restaurant.address)}"
-                                )
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-                                .onFailure { vm.error = "No map application is installed." }
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { vm.route = "Reviews" },
+                        shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("View on map")
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFFFB800), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Reviews (${vm.reviews.size})")
+                    }
+                    Button(
+                        onClick = { vm.route = "Map" },
+                        colors = ButtonDefaults.buttonColors(containerColor = RestroTokens.surface),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(Icons.Default.Map, null, tint = RestroTokens.coral, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("View on Map", color = RestroTokens.text)
                     }
                 }
             }
+
+        if (!detail && vm.route != "Favorites") {
+            item {
+                Surface(
+                    onClick = { vm.route = "Map" },
+                    color = RestroTokens.surface,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(RestroTokens.coral.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Explore, null, tint = RestroTokens.coral, modifier = Modifier.size(22.dp))
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Interactive City Food Map", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Explore restaurants & delivery radius live on map", fontSize = 12.sp, color = RestroTokens.muted)
+                        }
+                        Icon(Icons.Default.ChevronRight, null, tint = RestroTokens.muted)
+                    }
+                }
+            }
+        }
+
         item {
             OutlinedTextField(
                 value = vm.query,
@@ -147,6 +185,11 @@ fun Discovery(vm: DeliveryViewModel) {
             )
         }
         item {
+            val availableCategories = if (detail) {
+                vm.catalog.dishes.filter { it.restaurantId == vm.restaurantId }.map { it.category }.distinct()
+            } else {
+                vm.catalog.dishes.map { it.category }.distinct()
+            }
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     FilterChip(
@@ -169,7 +212,7 @@ fun Discovery(vm: DeliveryViewModel) {
                         label = { Text("All") },
                     )
                 }
-                items(vm.catalog.dishes.map { it.category }.distinct()) { category ->
+                items(availableCategories) { category ->
                     FilterChip(
                         selected = vm.category == category,
                         onClick = { vm.category = category },

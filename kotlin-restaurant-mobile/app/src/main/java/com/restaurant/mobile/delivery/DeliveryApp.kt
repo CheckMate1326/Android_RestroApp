@@ -116,6 +116,7 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                             "Search",
                                             "Favorites",
                                             "Restaurant" -> Discovery(vm)
+                                            "Map" -> DeliveryInteractiveMap(vm, onClose = { vm.route = "Home" })
                                             "Food" -> FoodScreen(vm)
                                             "Cart" -> CartScreen(vm)
                                             "Checkout",
@@ -148,6 +149,7 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                             ) {
                                 listOf(
                                         "Home" to Icons.Default.Home,
+                                        "Map" to Icons.Default.Map,
                                         "Favorites" to Icons.Default.FavoriteBorder,
                                         "Orders" to Icons.Default.ReceiptLong,
                                         "Profile" to Icons.Default.PersonOutline,
