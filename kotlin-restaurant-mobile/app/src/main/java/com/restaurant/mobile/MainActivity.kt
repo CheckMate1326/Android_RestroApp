@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +37,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            com.restaurant.mobile.delivery.DeliveryApp()
+            var isStaffMode by rememberSaveable { mutableStateOf(false) }
+
+            if (isStaffMode) {
+                RestaurantMobileApp(
+                    onBackToCustomer = { isStaffMode = false },
+                    onShowToast = { msg ->
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            } else {
+                com.restaurant.mobile.delivery.DeliveryApp(
+                    onOpenStaffPortal = { isStaffMode = true }
+                )
+            }
         }
     }
 }
@@ -50,7 +64,10 @@ enum class NavigationScreen(val title: String, val icon: ImageVector) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RestaurantMobileApp(onShowToast: (String) -> Unit) {
+fun RestaurantMobileApp(
+    onBackToCustomer: (() -> Unit)? = null,
+    onShowToast: (String) -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     var currentScreen by remember { mutableStateOf(NavigationScreen.POS) }
 
@@ -90,6 +107,13 @@ fun RestaurantMobileApp(onShowToast: (String) -> Unit) {
         Scaffold(
             topBar = {
                 TopAppBar(
+                    navigationIcon = {
+                        if (onBackToCustomer != null) {
+                            IconButton(onClick = onBackToCustomer) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Back to Customer App", tint = Color(0xFF1C1917))
+                            }
+                        }
+                    },
                     title = {
                         Column {
                             Text(
@@ -589,7 +613,7 @@ fun CartBottomSheetView(
                     }
                 }
 
-                Divider()
+                HorizontalDivider()
 
                 Spacer(modifier = Modifier.height(12.dp))
 

@@ -19,7 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeliveryApp(vm: DeliveryViewModel = viewModel()) {
+fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> Unit)? = null) {
     RestroTheme {
         val layer = rememberGraphicsLayer()
         val backdrop = remember(layer) { Backdrop(layer) }
@@ -54,6 +54,11 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel()) {
                                     color = RestroTokens.muted,
                                     fontSize = 12.sp,
                                 )
+                            }
+                            if (onOpenStaffPortal != null) {
+                                IconButton(onClick = onOpenStaffPortal) {
+                                    Icon(Icons.Default.Storefront, "Staff POS / KDS", tint = RestroTokens.coral)
+                                }
                             }
                             if (vm.profile != null)
                                 IconButton(onClick = { vm.route = "Cart" }) {

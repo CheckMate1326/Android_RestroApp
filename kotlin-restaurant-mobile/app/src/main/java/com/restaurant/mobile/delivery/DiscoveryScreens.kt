@@ -58,6 +58,15 @@ fun AuthScreen(vm: DeliveryViewModel) {
                 else "New to Restro? Create an account"
             )
         }
+        OutlinedButton(
+            onClick = { vm.demoLogin() },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Fastfood, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Explore as Demo Diner", fontWeight = FontWeight.Bold)
+        }
     }
 }
 
