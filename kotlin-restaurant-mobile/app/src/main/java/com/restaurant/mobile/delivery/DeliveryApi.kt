@@ -98,13 +98,63 @@ class ApiFailure(val status: Int, message: String) : Exception(message)
 
 class DeliveryApi {
     var token: String? = null
+    var engine: RestroFirebaseBackendEngine? = null
     val gson = Gson()
 
     suspend inline fun <reified T> call(
         path: String,
         method: String = "GET",
         body: Any? = null,
-    ): T = gson.fromJson(request(path, method, body), object : TypeToken<T>() {}.type)
+    ): T {
+        // Pure Kotlin Firebase & SQL Backend execution
+        engine?.let { eng ->
+            val localResult = dispatchToKotlinEngine(eng, path, method, body)
+            if (localResult != null) {
+                return gson.fromJson(gson.toJson(localResult), object : TypeToken<T>() {}.type)
+            }
+        }
+
+        return gson.fromJson(request(path, method, body), object : TypeToken<T>() {}.type)
+    }
+
+    fun dispatchToKotlinEngine(eng: RestroFirebaseBackendEngine, path: String, method: String, body: Any?): Any? {
+        val cleanPath = path.substringBefore("?")
+        return when {
+            cleanPath == "/catalog" -> eng.getCatalog()
+            cleanPath == "/auth/otp/send" -> {
+                val req = if (body is OtpSendRequest) body else gson.fromJson(gson.toJson(body), OtpSendRequest::class.java)
+                eng.sendOtp(req)
+            }
+            cleanPath == "/auth/otp/verify" -> {
+                val req = if (body is OtpVerifyRequest) body else gson.fromJson(gson.toJson(body), OtpVerifyRequest::class.java)
+                eng.verifyOtp(req)
+            }
+            cleanPath == "/orders" && method == "GET" -> eng.sqlDb.getAllOrders()
+            cleanPath == "/addresses" && method == "GET" -> eng.sqlDb.getAllAddresses()
+            cleanPath == "/addresses" && method == "POST" -> {
+                val addr = if (body is Address) body else gson.fromJson(gson.toJson(body), Address::class.java)
+                eng.sqlDb.saveAddress(addr)
+                addr
+            }
+            cleanPath.startsWith("/orders/") && cleanPath.endsWith("/tracking") -> {
+                val orderId = cleanPath.removePrefix("/orders/").removeSuffix("/tracking")
+                val orders = eng.sqlDb.getAllOrders()
+                val order = orders.find { it.id == orderId } ?: orders.firstOrNull()
+                TrackingResponse(
+                    orderId = orderId,
+                    restaurantName = order?.restaurantName ?: "Restaurant",
+                    status = "On the way",
+                    etaMinutes = 18,
+                    distanceRemainingKm = 2.4,
+                    isNearby = false,
+                    rider = RiderTracking("Vikram Kumar", "+91 98112 34567", "KA-01-EQ-9872", LocationPoint(12.9716, 77.5946))
+                )
+            }
+            cleanPath == "/cart" -> Cart()
+            cleanPath == "/favorites" -> emptyList<String>()
+            else -> null
+        }
+    }
 
     suspend fun request(path: String, method: String, body: Any?): String =
         withContext(Dispatchers.IO) {

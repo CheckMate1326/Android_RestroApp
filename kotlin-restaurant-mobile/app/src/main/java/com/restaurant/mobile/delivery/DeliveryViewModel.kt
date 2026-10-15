@@ -393,7 +393,9 @@ object MockCatalog {
 
 class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     private val session = SessionStore(app)
-    val api = DeliveryApi()
+    val backend = RestroFirebaseBackendEngine(app)
+    val sqlDb get() = backend.sqlDb
+    val api = DeliveryApi().apply { engine = backend }
     var starting by mutableStateOf(true)
         private set
 
@@ -477,7 +479,15 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                     catalog = remoteCatalog
                 }
             } catch (_: Exception) {
-                catalog = MockCatalog.sample
+                catalog = backend.getCatalog()
+            }
+            val storedAddresses = sqlDb.getAllAddresses()
+            if (storedAddresses.isNotEmpty()) {
+                addresses = storedAddresses
+            }
+            val storedOrders = sqlDb.getAllOrders()
+            if (storedOrders.isNotEmpty()) {
+                orders = storedOrders
             }
             if (api.token != null) refreshAccount()
             starting = false
@@ -790,56 +800,64 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun computeQuote(): Quote {
-        val subtotal = cart.lines.sumOf { line ->
-            val dish = catalog.dishes.find { it.id == line.dishId }
-            val dishPrice = dish?.price ?: 0L
-            val addonsPrice = dish?.addons?.filter { it.id in line.addons }?.sumOf { it.price } ?: 0L
-            (dishPrice + addonsPrice) * line.quantity
-        }
-        val delivery = 4000L
-        val tax = (subtotal * 0.05).toLong()
-        val discount = if (cart.coupon.isNotBlank()) 5000L.coerceAtMost(subtotal) else 0L
-        val fallbackRestId = cart.lines.firstOrNull()?.let { line ->
-            catalog.dishes.find { it.id == line.dishId }?.restaurantId
-        } ?: "rest-1"
-        val activeRestaurantId = if (restaurantId.isNotBlank()) restaurantId else fallbackRestId
-        val q = Quote(
-            restaurantId = activeRestaurantId,
-            lines = cart.lines.map { line ->
+        return try {
+            val q = backend.calculateQuote(cart)
+            quote = q
+            q
+        } catch (_: Exception) {
+            val subtotal = cart.lines.sumOf { line ->
                 val dish = catalog.dishes.find { it.id == line.dishId }
-                QuoteLine(
-                    dishId = line.dishId,
-                    name = dish?.name ?: "Item",
-                    quantity = line.quantity,
-                    addons = line.addons,
-                    unitPrice = dish?.price ?: 0L,
-                    total = (dish?.price ?: 0L) * line.quantity
-                )
-            },
-            subtotal = subtotal,
-            tax = tax,
-            delivery = delivery,
-            discount = discount,
-            total = (subtotal + delivery + tax - discount).coerceAtLeast(0L)
-        )
-        quote = q
-        return q
+                val dishPrice = dish?.price ?: 0L
+                val addonsPrice = dish?.addons?.filter { it.id in line.addons }?.sumOf { it.price } ?: 0L
+                (dishPrice + addonsPrice) * line.quantity
+            }
+            val delivery = 4000L
+            val tax = (subtotal * 0.05).toLong()
+            val discount = if (cart.coupon.isNotBlank()) 5000L.coerceAtMost(subtotal) else 0L
+            val fallbackRestId = cart.lines.firstOrNull()?.let { line ->
+                catalog.dishes.find { it.id == line.dishId }?.restaurantId
+            } ?: "rest-1"
+            val activeRestaurantId = if (restaurantId.isNotBlank()) restaurantId else fallbackRestId
+            val q = Quote(
+                restaurantId = activeRestaurantId,
+                lines = cart.lines.map { line ->
+                    val dish = catalog.dishes.find { it.id == line.dishId }
+                    QuoteLine(
+                        dishId = line.dishId,
+                        name = dish?.name ?: "Item",
+                        quantity = line.quantity,
+                        addons = line.addons,
+                        unitPrice = dish?.price ?: 0L,
+                        total = (dish?.price ?: 0L) * line.quantity
+                    )
+                },
+                subtotal = subtotal,
+                tax = tax,
+                delivery = delivery,
+                discount = discount,
+                total = (subtotal + delivery + tax - discount).coerceAtLeast(0L)
+            )
+            quote = q
+            q
+        }
     }
 
     fun loadQuote() = run {
         computeQuote()
 
         if (addresses.isEmpty()) {
-            addresses = listOf(
-                Address(
-                    id = "addr-default",
-                    label = "Home",
-                    line = "Flat 402, Green Glen Layout, Bellandur",
-                    city = "Bengaluru",
-                    postcode = "560103",
-                    phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210"
-                )
+            val defaultAddr = Address(
+                id = "addr-default",
+                label = "Home",
+                line = "Flat 402, Green Glen Layout, Bellandur",
+                city = "Bengaluru",
+                postcode = "560103",
+                phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210",
+                latitude = 12.9352,
+                longitude = 77.6245
             )
+            addresses = listOf(defaultAddr)
+            sqlDb.saveAddress(defaultAddr)
         }
 
         if (api.token != null) {
@@ -863,44 +881,26 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                 line = "Flat 402, Green Glen Layout, Bellandur",
                 city = "Bengaluru",
                 postcode = "560103",
-                phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210"
-            ).also { addresses = listOf(it) }
-
-        val activeRestId = if (restaurantId.isNotBlank()) restaurantId else currentQuote.restaurantId
-        val rest = catalog.restaurants.find { it.id == activeRestId }
-        val restName = rest?.name ?: "Bistro Lumière & Biryani"
-        val paymentStatus = if (paymentMethod.contains("Cash", true)) "Due on delivery" else "Paid Online (Verified)"
-
-        val fallbackOrder = DeliveryOrder(
-            id = (1000 + (Math.random() * 9000).toInt()).toString(),
-            restaurantId = activeRestId,
-            restaurantName = restName,
-            address = selectedAddr,
-            quote = currentQuote,
-            paymentMethod = paymentMethod,
-            paymentStatus = paymentStatus,
-            status = "Confirmed"
-        )
-
-        if (api.token != null) {
-            try {
-                val order: DeliveryOrder =
-                    api.call("/orders", "POST", Checkout(selectedAddr.id, paymentMethod, checkoutKey, total))
-                orders = listOf(order) + orders.filterNot { it.id == order.id }
-                orderId = order.id
-            } catch (_: Exception) {
-                orders = listOf(fallbackOrder) + orders
-                orderId = fallbackOrder.id
+                phone = profile?.phone?.ifBlank { "+91 98765 43210" } ?: "+91 98765 43210",
+                latitude = 12.9352,
+                longitude = 77.6245
+            ).also {
+                addresses = listOf(it)
+                sqlDb.saveAddress(it)
             }
-        } else {
-            orders = listOf(fallbackOrder) + orders
-            orderId = fallbackOrder.id
-        }
 
-        cart = Cart()
-        quote = null
-        resetCheckoutKey()
-        route = "Confirmation"
+        val checkoutObj = Checkout(selectedAddr.id, paymentMethod, checkoutKey, total)
+        try {
+            val confirmedOrder = backend.placeOrder(checkoutObj, cart, selectedAddr)
+            orders = listOf(confirmedOrder) + orders.filterNot { it.id == confirmedOrder.id }
+            orderId = confirmedOrder.id
+            cart = Cart()
+            quote = null
+            resetCheckoutKey()
+            route = "Confirmation"
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to place order."
+        }
     }
 
     fun cancelOrder(id: String) {

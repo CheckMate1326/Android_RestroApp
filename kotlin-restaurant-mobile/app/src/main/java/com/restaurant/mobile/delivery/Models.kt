@@ -61,11 +61,17 @@ data class Address(
     val city: String,
     val postcode: String,
     val phone: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class Line(val dishId: String, val quantity: Int, val addons: List<String> = emptyList())
 
-data class Cart(val lines: List<Line> = emptyList(), val coupon: String = "")
+data class Cart(
+    val lines: List<Line> = emptyList(),
+    val coupon: String = "",
+    val restaurantId: String? = null,
+)
 
 data class QuoteLine(
     val dishId: String,
