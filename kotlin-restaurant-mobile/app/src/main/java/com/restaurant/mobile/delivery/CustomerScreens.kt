@@ -271,6 +271,8 @@ fun CheckoutScreen(vm: DeliveryViewModel) {
         mutableStateOf("Cash on delivery")
     }
 
+    var showPaymentSheet by rememberSaveable { mutableStateOf(false) }
+
     if (vm.addresses.isNotEmpty() && (selectedAddressId.isBlank() || vm.addresses.none { it.id == selectedAddressId })) {
         selectedAddressId = vm.addresses.first().id
     }
@@ -381,13 +383,30 @@ fun CheckoutScreen(vm: DeliveryViewModel) {
         val quoteTotal = vm.quote?.total ?: 0L
         BillRow("Grand Total", quoteTotal)
 
+        val isOnlinePayment = selectedPaymentMethod in listOf("UPI", "Card")
         Action(
-            label = if (quoteTotal > 0) "Place Order · ${money(quoteTotal)}" else "Place Order",
+            label = if (isOnlinePayment) "Proceed to Pay · ${money(quoteTotal)}"
+            else if (quoteTotal > 0) "Place Order · ${money(quoteTotal)}" else "Place Order",
             enabled = !vm.busy
         ) {
             val addrId = selectedAddressId.ifBlank { vm.addresses.firstOrNull()?.id ?: "addr-default" }
-            vm.checkout(addrId, selectedPaymentMethod)
+            if (isOnlinePayment) {
+                showPaymentSheet = true
+            } else {
+                vm.checkout(addrId, selectedPaymentMethod)
+            }
         }
+    }
+
+    if (showPaymentSheet) {
+        val addrId = selectedAddressId.ifBlank { vm.addresses.firstOrNull()?.id ?: "addr-default" }
+        PaymentGatewayBottomSheet(
+            vm = vm,
+            totalAmount = vm.quote?.total ?: 0L,
+            selectedAddressId = addrId,
+            initialMethod = selectedPaymentMethod,
+            onDismiss = { showPaymentSheet = false }
+        )
     }
 }
 
@@ -455,8 +474,8 @@ fun OrdersScreen(vm: DeliveryViewModel) {
             Page {
                 Heading("Live Order Tracking", "Order #${order?.id ?: vm.orderId}")
 
-                // Interactive Animated Route Map
-                OrderTrackingRouteMap(order = order)
+                // Interactive Animated Route Map with 10s Heartbeat & OSM integration
+                OrderTrackingRouteMap(order = order, vm = vm)
 
                 Card(
                     colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),

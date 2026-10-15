@@ -456,6 +456,21 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     var otpPreviewCode by mutableStateOf<String?>(null)
     var otpNotificationBanner by mutableStateOf<String?>(null)
 
+    // Proximity & Landmark Feed State
+    var currentLandmark by mutableStateOf("Indiranagar, Bengaluru")
+    var currentLatitude by mutableDoubleStateOf(12.9784)
+    var currentLongitude by mutableDoubleStateOf(77.6408)
+    val maxDeliveryRadiusKm = 6.5
+
+    // In-Menu Multi-Restaurant Guard State
+    var showMultiRestaurantDialog by mutableStateOf(false)
+    var pendingDishToAdd by mutableStateOf<Dish?>(null)
+    var pendingAddonsToAdd by mutableStateOf<List<String>>(emptyList())
+    var pendingQuantityToAdd by mutableIntStateOf(1)
+
+    // Android Native Notification Channel Manager
+    val notificationHelper = DeliveryNotificationHelper(app)
+
     fun applyCoupon(code: String) = run {
         try {
             cart = api.call("/cart", "PUT", cart.copy(coupon = code))
@@ -788,15 +803,181 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         if (after != null) route = after
     }
 
-    fun add(dish: Dish, addons: List<String>, quantity: Int) {
-        val match =
-            cart.lines.indexOfFirst { it.dishId == dish.id && it.addons.toSet() == addons.toSet() }
+    fun getCartRestaurantId(): String? {
+        val firstLine = cart.lines.firstOrNull() ?: return null
+        return catalog.dishes.find { it.id == firstLine.dishId }?.restaurantId
+    }
+
+    fun getCartRestaurantName(): String {
+        val rId = getCartRestaurantId() ?: return ""
+        return catalog.restaurants.find { it.id == rId }?.name ?: "Previous Restaurant"
+    }
+
+    fun getDishQuantityInCart(dishId: String): Int {
+        return cart.lines.filter { it.dishId == dishId }.sumOf { it.quantity }
+    }
+
+    fun getCartTotalItems(): Int {
+        return cart.lines.sumOf { it.quantity }
+    }
+
+    fun getCartTotalAmount(): Long {
+        return cart.lines.sumOf { line ->
+            val dish = catalog.dishes.find { it.id == line.dishId }
+            val basePrice = dish?.price ?: 0L
+            val addonsPrice = dish?.addons?.filter { it.id in line.addons }?.sumOf { it.price } ?: 0L
+            (basePrice + addonsPrice) * line.quantity
+        }
+    }
+
+    fun tryAddDish(dish: Dish, addons: List<String> = emptyList(), quantity: Int = 1, redirectToCart: Boolean = false) {
+        val currentRestId = getCartRestaurantId()
+        if (currentRestId != null && currentRestId != dish.restaurantId && cart.lines.isNotEmpty()) {
+            pendingDishToAdd = dish
+            pendingAddonsToAdd = addons
+            pendingQuantityToAdd = quantity
+            showMultiRestaurantDialog = true
+            return
+        }
+
+        applyAddDish(dish, addons, quantity, if (redirectToCart) "Cart" else null)
+    }
+
+    fun confirmDiscardAndAdd() {
+        val dish = pendingDishToAdd ?: return
+        val addons = pendingAddonsToAdd
+        val quantity = pendingQuantityToAdd
+
+        showMultiRestaurantDialog = false
+        pendingDishToAdd = null
+        pendingAddonsToAdd = emptyList()
+        pendingQuantityToAdd = 1
+
+        val newLines = listOf(Line(dish.id, quantity, addons))
+        restaurantId = dish.restaurantId
+        changeCart(newLines, null)
+    }
+
+    fun dismissMultiRestaurantDialog() {
+        showMultiRestaurantDialog = false
+        pendingDishToAdd = null
+        pendingAddonsToAdd = emptyList()
+        pendingQuantityToAdd = 1
+    }
+
+    private fun applyAddDish(dish: Dish, addons: List<String>, quantity: Int, after: String? = null) {
+        val match = cart.lines.indexOfFirst { it.dishId == dish.id && it.addons.toSet() == addons.toSet() }
         val lines = cart.lines.toMutableList()
-        if (match >= 0)
-            lines[match] =
-                lines[match].copy(quantity = (lines[match].quantity + quantity).coerceAtMost(20))
-        else lines.add(Line(dish.id, quantity, addons))
-        changeCart(lines, "Cart")
+        if (match >= 0) {
+            lines[match] = lines[match].copy(quantity = (lines[match].quantity + quantity).coerceAtMost(20))
+        } else {
+            lines.add(Line(dish.id, quantity, addons))
+        }
+        restaurantId = dish.restaurantId
+        changeCart(lines, after)
+    }
+
+    fun incrementDish(dish: Dish) {
+        tryAddDish(dish, emptyList(), 1, redirectToCart = false)
+    }
+
+    fun decrementDish(dish: Dish) {
+        val lines = cart.lines.toMutableList()
+        val index = lines.indexOfLast { it.dishId == dish.id }
+        if (index >= 0) {
+            val currentLine = lines[index]
+            if (currentLine.quantity > 1) {
+                lines[index] = currentLine.copy(quantity = currentLine.quantity - 1)
+            } else {
+                lines.removeAt(index)
+            }
+            changeCart(lines, null)
+        }
+    }
+
+    fun add(dish: Dish, addons: List<String>, quantity: Int) {
+        tryAddDish(dish, addons, quantity, redirectToCart = false)
+    }
+
+    // Proximity & Landmark Calculations
+    fun setDeliveryLandmark(landmark: String, lat: Double, lng: Double) {
+        currentLandmark = landmark
+        currentLatitude = lat
+        currentLongitude = lng
+    }
+
+    fun calculateDistanceKm(destLat: Double, destLng: Double): Double {
+        val earthRadius = 6371.0
+        val dLat = Math.toRadians(destLat - currentLatitude)
+        val dLng = Math.toRadians(destLng - currentLongitude)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(currentLatitude)) * Math.cos(Math.toRadians(destLat)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return Math.round(earthRadius * c * 10.0) / 10.0
+    }
+
+    fun getRestaurantDistanceKm(restaurant: Restaurant): Double {
+        return calculateDistanceKm(restaurant.latitude, restaurant.longitude)
+    }
+
+    fun isRestaurantInRange(restaurant: Restaurant): Boolean {
+        return getRestaurantDistanceKm(restaurant) <= maxDeliveryRadiusKm
+    }
+
+    fun getRestaurantDistanceInfo(restaurant: Restaurant): String {
+        val dist = getRestaurantDistanceKm(restaurant)
+        val estMins = (dist * 6.0 + 12).toInt()
+        return String.format(java.util.Locale.US, "%.1f km · %d mins", dist, estMins)
+    }
+
+    fun getNearestRestaurants(): List<Restaurant> {
+        return catalog.restaurants.sortedBy { getRestaurantDistanceKm(it) }
+    }
+
+    fun getFrequentlyOrderedDishes(): List<Pair<Dish, String>> {
+        val fromOrders = orders.flatMap { order ->
+            order.quote.lines.mapNotNull { ql ->
+                val dish = catalog.dishes.find { it.id == ql.dishId }
+                if (dish != null) Pair(dish, order.restaurantName) else null
+            }
+        }.distinctBy { it.first.id }
+
+        if (fromOrders.isNotEmpty()) return fromOrders.take(6)
+
+        return catalog.dishes.take(5).map { dish ->
+            val restName = catalog.restaurants.find { it.id == dish.restaurantId }?.name ?: "Bistro Lumière"
+            Pair(dish, restName)
+        }
+    }
+
+    fun validateCardLuhn(number: String): Boolean {
+        val clean = number.filter { it.isDigit() }
+        if (clean.length < 13 || clean.length > 19) return false
+        var sum = 0
+        var alternate = false
+        for (i in clean.length - 1 downTo 0) {
+            var n = clean[i] - '0'
+            if (alternate) {
+                n *= 2
+                if (n > 9) n = (n % 10) + 1
+            }
+            sum += n
+            alternate = !alternate
+        }
+        return (sum % 10 == 0)
+    }
+
+    fun notifyProximityAlert(orderId: String, riderName: String = "Ramesh") {
+        notificationHelper.notifyRiderNearby(orderId, riderName)
+    }
+
+    fun notifyOrderDelivered(orderId: String) {
+        notificationHelper.notifyOrderDelivered(orderId)
+    }
+
+    fun markOrderDelivered(orderId: String) {
+        orders = orders.map { if (it.id == orderId) it.copy(status = "Delivered") else it }
     }
 
     private fun computeQuote(): Quote {
@@ -898,6 +1079,11 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             quote = null
             resetCheckoutKey()
             route = "Confirmation"
+            notificationHelper.notifyOrderPlaced(
+                orderId = confirmedOrder.id,
+                restaurantName = confirmedOrder.restaurantName,
+                etaMinutes = 28
+            )
         } catch (e: Exception) {
             error = e.message ?: "Failed to place order."
         }

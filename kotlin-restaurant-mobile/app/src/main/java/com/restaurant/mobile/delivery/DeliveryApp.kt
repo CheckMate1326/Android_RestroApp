@@ -13,6 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +26,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> Unit)? = null) {
+    var showLandmarkPicker by remember { mutableStateOf(false) }
+
     RestroTheme {
         val layer = rememberGraphicsLayer()
         val backdrop = remember(layer) { Backdrop(layer) }
@@ -43,17 +51,51 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                 IconButton(onClick = vm::back) {
                                     Icon(Icons.Default.ArrowBack, "Back")
                                 }
-                            Column(Modifier.weight(1f)) {
-                                Text("restro", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                                Text(
-                                    if (vm.profile == null) "Good food. A little closer."
-                                    else
-                                        vm.addresses.firstOrNull()?.let {
-                                            "${it.label} · ${it.city}"
-                                        } ?: "Add your delivery address",
-                                    color = RestroTokens.muted,
-                                    fontSize = 12.sp,
-                                )
+                            Column(
+                                Modifier.weight(1f).clickable {
+                                    if (vm.profile != null) showLandmarkPicker = true
+                                }
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("restro", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.width(6.dp))
+                                    Surface(
+                                        color = RestroTokens.coral.copy(alpha = 0.15f),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            "LIVE GPS",
+                                            color = RestroTokens.coral,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = RestroTokens.coral,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = vm.currentLandmark,
+                                        color = RestroTokens.text,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1
+                                    )
+                                    Icon(
+                                        Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Change landmark",
+                                        tint = RestroTokens.muted,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             }
                             if (onOpenStaffPortal != null) {
                                 IconButton(onClick = onOpenStaffPortal) {
@@ -134,6 +176,122 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                 }
                             }
                     }
+                    // In-Menu Sticky Cart Pill (Floating above navigation bar)
+                    if (vm.cart.lines.isNotEmpty() && vm.route in listOf("Home", "Search", "Favorites", "Restaurant")) {
+                        Surface(
+                            onClick = { vm.route = "Cart" },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 76.dp, start = 16.dp, end = 16.dp)
+                                .widthIn(max = 560.dp)
+                                .fillMaxWidth()
+                                .shadow(14.dp, RoundedCornerShape(20.dp)),
+                            color = RestroTokens.coral,
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White.copy(alpha = 0.25f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ShoppingBag,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            "${vm.getCartTotalItems()} items · ${money(vm.getCartTotalAmount())}",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            "From ${vm.getCartRestaurantName()}",
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "View Cart",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 13.sp
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Multi-Restaurant Guard Modal Prompt
+                    if (vm.showMultiRestaurantDialog) {
+                        val currentRestName = vm.getCartRestaurantName()
+                        val newRestName = vm.pendingDishToAdd?.let {
+                            vm.catalog.restaurants.find { r -> r.id == it.restaurantId }?.name
+                        } ?: "another restaurant"
+
+                        AlertDialog(
+                            onDismissRequest = { vm.dismissMultiRestaurantDialog() },
+                            title = {
+                                Text("Replace cart items?", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            },
+                            text = {
+                                Text(
+                                    "Your cart contains items from $currentRestName. Discard items from $currentRestName and start an order from $newRestName?",
+                                    color = RestroTokens.muted,
+                                    fontSize = 14.sp
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = { vm.confirmDiscardAndAdd() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = RestroTokens.coral),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Discard & Start New", fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { vm.dismissMultiRestaurantDialog() }) {
+                                    Text("Cancel", color = RestroTokens.muted)
+                                }
+                            },
+                            containerColor = RestroTokens.surface,
+                            titleContentColor = RestroTokens.text,
+                            textContentColor = RestroTokens.text,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                    }
+
+                    if (showLandmarkPicker) {
+                        LandmarkPickerSheet(
+                            vm = vm,
+                            onDismiss = { showLandmarkPicker = false }
+                        )
+                    }
+
                     if (vm.profile != null)
                         Glass(
                             Modifier.align(Alignment.BottomCenter)
