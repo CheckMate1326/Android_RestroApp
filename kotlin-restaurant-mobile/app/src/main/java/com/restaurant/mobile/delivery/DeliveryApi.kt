@@ -74,6 +74,24 @@ class SessionStore(context: Context) {
             save(null)
             null
         }
+
+    fun saveProfile(profile: Profile?) {
+        if (profile == null) {
+            prefs.edit().remove("profile_json").commit()
+            return
+        }
+        val json = Gson().toJson(profile)
+        prefs.edit().putString("profile_json", json).commit()
+    }
+
+    fun loadProfile(): Profile? =
+        try {
+            prefs.getString("profile_json", null)?.let {
+                Gson().fromJson(it, Profile::class.java)
+            }
+        } catch (_: Exception) {
+            null
+        }
 }
 
 class ApiFailure(val status: Int, message: String) : Exception(message)

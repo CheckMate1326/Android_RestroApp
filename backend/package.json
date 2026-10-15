@@ -1,0 +1,14 @@
+{
+  "name": "restaurant-delivery-backend",
+  "version": "1.0.0",
+  "description": "Secure Restro Food Delivery Backend with SQL Auth, OTP, Range Validation, Anti-Hacking Tamper Defenses & Live Tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_security.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

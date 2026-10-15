@@ -117,3 +117,23 @@ data class Checkout(
     val idempotencyKey: String,
     val expectedTotal: Long,
 )
+
+data class OtpSendRequest(val target: String, val type: String = "phone")
+data class OtpSendResponse(val success: Boolean, val message: String, val target: String, val previewOtp: String? = null)
+data class OtpVerifyRequest(val target: String, val code: String, val name: String = "")
+
+data class LocationPoint(val latitude: Double, val longitude: Double)
+data class RiderTracking(val name: String, val phone: String, val vehicleNumber: String, val currentLocation: LocationPoint)
+data class TrackingResponse(
+    val orderId: String,
+    val restaurantName: String = "",
+    val status: String,
+    val progress: Int = 0,
+    val rider: RiderTracking? = null,
+    val distanceRemainingKm: Double = 0.0,
+    val etaMinutes: Int = 0,
+    val isNearby: Boolean = false,
+    val isDelivered: Boolean = false,
+    val notificationAlert: String? = null,
+    val updatedAt: String = ""
+)

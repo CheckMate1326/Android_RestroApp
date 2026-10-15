@@ -22,43 +22,266 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun AuthScreen(vm: DeliveryViewModel) {
+    var authMode by rememberSaveable { mutableStateOf(0) } // 0: Fast OTP, 1: Password
+    var otpType by rememberSaveable { mutableStateOf(0) } // 0: Phone, 1: Email
+    var phoneInput by rememberSaveable { mutableStateOf("") }
+    var emailOtpInput by rememberSaveable { mutableStateOf("") }
+    var otpCode by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+
     var register by rememberSaveable { mutableStateOf(false) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var name by rememberSaveable { mutableStateOf("") }
+
     Page {
         vm.catalog.dishes.firstOrNull()?.let {
             Photo(
                 it.image,
                 it.name,
-                Modifier.fillMaxWidth().height(220.dp).clip(RestroTokens.shape),
+                Modifier.fillMaxWidth().height(180.dp).clip(RestroTokens.shape),
             )
         }
+
         Heading(
-            if (register) "Your next favourite\nstarts here." else "Something good\nis on its way.",
-            if (register) "Create your Restro account." else "Sign in to discover, save and order.",
+            if (authMode == 0) "Fast & Secure\nSign In."
+            else if (register) "Your next favourite\nstarts here."
+            else "Something good\nis on its way.",
+            if (authMode == 0) "Verify via instant 6-digit OTP to mobile or email."
+            else if (register) "Create your Restro account."
+            else "Sign in to discover, save and order.",
         )
-        if (register) Field("Your name", name, { name = it })
-        Field("Email", email, { email = it })
-        Field("Password · at least 10 characters", password, { password = it }, true)
-        Action(
-            if (register) "Create account" else "Sign in",
-            !vm.busy &&
-                email.isNotBlank() &&
-                password.length >= 10 &&
-                (!register || name.trim().length >= 2),
+
+        // Auth Mode Switcher Tab
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(RestroTokens.surface)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            vm.auth(email, password, name, register)
+            Button(
+                onClick = {
+                    authMode = 0
+                    vm.resetOtp()
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (authMode == 0) RestroTokens.coral else Color.Transparent,
+                    contentColor = if (authMode == 0) Color.White else RestroTokens.muted
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) {
+                Icon(Icons.Default.PhoneAndroid, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Phone / OTP", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            Button(
+                onClick = { authMode = 1 },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (authMode == 1) RestroTokens.coral else Color.Transparent,
+                    contentColor = if (authMode == 1) Color.White else RestroTokens.muted
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) {
+                Icon(Icons.Default.Lock, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Password", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
         }
-        TextButton(onClick = { register = !register }) {
-            Text(
-                if (register) "Already have an account? Sign in"
-                else "New to Restro? Create an account"
-            )
+
+        if (authMode == 0) {
+            // OTP Authentication Flow
+            if (!vm.otpSent) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilterChip(
+                        selected = otpType == 0,
+                        onClick = { otpType = 0 },
+                        label = { Text("Mobile Phone") },
+                        leadingIcon = { Icon(Icons.Default.Phone, null, modifier = Modifier.size(16.dp)) }
+                    )
+                    FilterChip(
+                        selected = otpType == 1,
+                        onClick = { otpType = 1 },
+                        label = { Text("Email Address") },
+                        leadingIcon = { Icon(Icons.Default.Email, null, modifier = Modifier.size(16.dp)) }
+                    )
+                }
+
+                if (otpType == 0) {
+                    OutlinedTextField(
+                        value = phoneInput,
+                        onValueChange = { phoneInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Phone Number") },
+                        placeholder = { Text("+91 98765 43210") },
+                        leadingIcon = { Icon(Icons.Default.Call, null, tint = RestroTokens.coral) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = emailOtpInput,
+                        onValueChange = { emailOtpInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Email Address") },
+                        placeholder = { Text("you@example.com") },
+                        leadingIcon = { Icon(Icons.Default.Email, null, tint = RestroTokens.coral) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Your Name (Optional)") },
+                    placeholder = { Text("Aarav Sharma") },
+                    leadingIcon = { Icon(Icons.Default.Person, null) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp)
+                )
+
+                Action(
+                    label = "Send Verification OTP",
+                    enabled = !vm.busy && if (otpType == 0) phoneInput.trim().length >= 8 else emailOtpInput.contains("@")
+                ) {
+                    val target = if (otpType == 0) phoneInput else emailOtpInput
+                    vm.sendOtp(target, isPhone = (otpType == 0))
+                }
+            } else {
+                // OTP Sent View
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, null, tint = RestroTokens.green)
+                            Text(
+                                "OTP sent to ${vm.otpTarget}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        vm.otpNotificationBanner?.let { banner ->
+                            Surface(
+                                color = RestroTokens.coral.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Notifications, null, tint = RestroTokens.coral, modifier = Modifier.size(18.dp))
+                                    Text(
+                                        banner,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (vm.otpPreviewCode != null) {
+                                        TextButton(
+                                            onClick = { otpCode = vm.otpPreviewCode ?: "" },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                        ) {
+                                            Text("Autofill", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = RestroTokens.coral)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = otpCode,
+                            onValueChange = { if (it.length <= 6) otpCode = it.filter { ch -> ch.isDigit() } },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Enter 6-Digit Code") },
+                            placeholder = { Text("• • • • • •") },
+                            leadingIcon = { Icon(Icons.Default.Lock, null, tint = RestroTokens.coral) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+
+                        Action(
+                            label = "Verify & Continue",
+                            enabled = !vm.busy && otpCode.length == 6
+                        ) {
+                            vm.verifyOtp(otpCode, name)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(onClick = {
+                                vm.resetOtp()
+                                otpCode = ""
+                            }) {
+                                Text("Change Target", fontSize = 12.sp)
+                            }
+                            TextButton(onClick = {
+                                otpCode = ""
+                                vm.sendOtp(vm.otpTarget, isPhone = (otpType == 0))
+                            }) {
+                                Text("Resend OTP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Password Authentication Flow
+            if (register) Field("Your name", name, { name = it })
+            Field("Email", email, { email = it })
+            Field("Password · at least 10 characters", password, { password = it }, true)
+            Action(
+                if (register) "Create account" else "Sign in",
+                !vm.busy &&
+                    email.isNotBlank() &&
+                    password.length >= 10 &&
+                    (!register || name.trim().length >= 2),
+            ) {
+                vm.auth(email, password, name, register)
+            }
+            TextButton(onClick = { register = !register }) {
+                Text(
+                    if (register) "Already have an account? Sign in"
+                    else "New to Restro? Create an account"
+                )
+            }
         }
+
+        HorizontalDivider(
+            color = Color.White.copy(alpha = 0.1f),
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+
         OutlinedButton(
             onClick = { vm.demoLogin() },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
