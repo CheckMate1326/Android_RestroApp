@@ -37,7 +37,11 @@ class SessionStore(context: Context) {
             }
     }
 
-    fun save(token: String?) {
+    companion object {
+        const val DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000L // 24 hours
+    }
+
+    fun save(token: String?, ttlMs: Long = DEFAULT_SESSION_TTL_MS) {
         if (token == null) {
             prefs.edit().clear().commit()
             return
@@ -53,22 +57,42 @@ class SessionStore(context: Context) {
                     Base64.NO_WRAP,
                 ),
             )
+            .putLong("expires_at", System.currentTimeMillis() + ttlMs)
             .commit()
+    }
+
+    fun getExpiresAt(): Long = prefs.getLong("expires_at", 0L)
+
+    fun isSessionExpired(): Boolean {
+        if (!prefs.contains("token")) return false
+        val expiresAt = getExpiresAt()
+        return expiresAt in 1 until System.currentTimeMillis()
+    }
+
+    fun extendSession(ttlMs: Long = DEFAULT_SESSION_TTL_MS) {
+        if (prefs.contains("token")) {
+            prefs.edit().putLong("expires_at", System.currentTimeMillis() + ttlMs).commit()
+        }
     }
 
     fun load(): String? =
         try {
-            prefs.getString("token", null)?.let {
-                val bytes = Base64.decode(it, Base64.NO_WRAP)
-                val cipher =
-                    Cipher.getInstance("AES/GCM/NoPadding").apply {
-                        init(
-                            Cipher.DECRYPT_MODE,
-                            key(),
-                            GCMParameterSpec(128, bytes.copyOfRange(0, 12)),
-                        )
-                    }
-                String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)))
+            if (isSessionExpired()) {
+                save(null)
+                null
+            } else {
+                prefs.getString("token", null)?.let {
+                    val bytes = Base64.decode(it, Base64.NO_WRAP)
+                    val cipher =
+                        Cipher.getInstance("AES/GCM/NoPadding").apply {
+                            init(
+                                Cipher.DECRYPT_MODE,
+                                key(),
+                                GCMParameterSpec(128, bytes.copyOfRange(0, 12)),
+                            )
+                        }
+                    String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)))
+                }
             }
         } catch (_: Exception) {
             save(null)
@@ -86,8 +110,13 @@ class SessionStore(context: Context) {
 
     fun loadProfile(): Profile? =
         try {
-            prefs.getString("profile_json", null)?.let {
-                Gson().fromJson(it, Profile::class.java)
+            if (isSessionExpired()) {
+                save(null)
+                null
+            } else {
+                prefs.getString("profile_json", null)?.let {
+                    Gson().fromJson(it, Profile::class.java)
+                }
             }
         } catch (_: Exception) {
             null
@@ -99,6 +128,7 @@ class ApiFailure(val status: Int, message: String) : Exception(message)
 class DeliveryApi {
     var token: String? = null
     var engine: RestroFirebaseBackendEngine? = null
+    var onSessionRevoked: ((String) -> Unit)? = null
     val gson = Gson()
 
     suspend inline fun <reified T> call(
@@ -177,6 +207,9 @@ class DeliveryApi {
                         ?.bufferedReader()
                         ?.use { it.readText() }
                         .orEmpty()
+                if (status == 401 && !path.startsWith("/auth")) {
+                    onSessionRevoked?.invoke("Your session has expired. Please sign in again.")
+                }
                 if (status !in 200..299) {
                     val message =
                         runCatching {
