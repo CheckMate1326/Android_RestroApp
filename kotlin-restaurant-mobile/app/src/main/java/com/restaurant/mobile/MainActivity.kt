@@ -45,6 +45,8 @@ class MainActivity : ComponentActivity() {
             val deliveryVm: com.restaurant.mobile.delivery.DeliveryViewModel =
                 androidx.lifecycle.viewmodel.compose.viewModel()
             var isStaffMode by rememberSaveable { mutableStateOf(false) }
+            var showStaffPinPad by rememberSaveable { mutableStateOf(false) }
+            var lastStaffInteractionMs by remember { mutableStateOf(System.currentTimeMillis()) }
 
             LaunchedEffect(deliveryVm.profile) {
                 if ((deliveryVm.profile == null || deliveryVm.profile?.role?.isStaff != true) && isStaffMode) {
@@ -52,11 +54,51 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // 3-Minute (180,000 ms) Inactivity Auto-Lock Timer for Staff Portal
+            LaunchedEffect(isStaffMode, lastStaffInteractionMs) {
+                if (isStaffMode) {
+                    kotlinx.coroutines.delay(180_000L)
+                    if (System.currentTimeMillis() - lastStaffInteractionMs >= 180_000L) {
+                        isStaffMode = false
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Staff Portal auto-locked after 3 minutes of inactivity",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+
+            if (showStaffPinPad && deliveryVm.profile != null) {
+                com.restaurant.mobile.delivery.StaffPinPadDialog(
+                    onVerifyPin = { pin -> deliveryVm.verifyStaffPinAndPromoteRole(pin) },
+                    onSuccess = { verifiedRole ->
+                        showStaffPinPad = false
+                        lastStaffInteractionMs = System.currentTimeMillis()
+                        isStaffMode = true
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Vault Unlocked: ${verifiedRole.label}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onDismiss = { showStaffPinPad = false }
+                )
+            }
+
             if (isStaffMode && deliveryVm.profile?.role?.isStaff == true) {
                 RestaurantMobileApp(
                     userRole = deliveryVm.profile?.role ?: com.restaurant.mobile.delivery.UserRole.WAITER,
                     onBackToCustomer = { isStaffMode = false },
+                    onSwitchStaffPin = {
+                        lastStaffInteractionMs = System.currentTimeMillis()
+                        showStaffPinPad = true
+                    },
+                    onUserInteraction = {
+                        lastStaffInteractionMs = System.currentTimeMillis()
+                    },
                     onShowToast = { msg ->
+                        lastStaffInteractionMs = System.currentTimeMillis()
                         Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     }
                 )
@@ -71,15 +113,8 @@ class MainActivity : ComponentActivity() {
                                 "Please sign in first to access the Staff Portal",
                                 Toast.LENGTH_SHORT
                             ).show()
-                        } else if (!profile.role.isStaff) {
-                            deliveryVm.route = "ForbiddenStaff"
-                            Toast.makeText(
-                                this@MainActivity,
-                                "403 Forbidden: Staff Access Required",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         } else {
-                            isStaffMode = true
+                            showStaffPinPad = true
                         }
                     }
                 )
@@ -100,6 +135,8 @@ enum class NavigationScreen(val title: String, val icon: ImageVector) {
 fun RestaurantMobileApp(
     userRole: com.restaurant.mobile.delivery.UserRole = com.restaurant.mobile.delivery.UserRole.ADMIN,
     onBackToCustomer: (() -> Unit)? = null,
+    onSwitchStaffPin: (() -> Unit)? = null,
+    onUserInteraction: (() -> Unit)? = null,
     onShowToast: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -127,6 +164,7 @@ fun RestaurantMobileApp(
     var isCartOpen by remember { mutableStateOf(false) }
 
     fun refreshAll() {
+        onUserInteraction?.invoke()
         coroutineScope.launch {
             categories = ApiClient.getCategories()
             menuItems = ApiClient.getMenuItems()
@@ -174,8 +212,20 @@ fun RestaurantMobileApp(
                         }
                     },
                     actions = {
+                        if (onSwitchStaffPin != null) {
+                            IconButton(onClick = onSwitchStaffPin) {
+                                Icon(
+                                    Icons.Default.Pin,
+                                    contentDescription = "Switch Staff PIN Role",
+                                    tint = Color(0xFFC2410C)
+                                )
+                            }
+                        }
                         if (currentScreen == NavigationScreen.POS) {
-                            IconButton(onClick = { isCartOpen = !isCartOpen }) {
+                            IconButton(onClick = {
+                                onUserInteraction?.invoke()
+                                isCartOpen = !isCartOpen
+                            }) {
                                 BadgedBox(
                                     badge = {
                                         if (cart.isNotEmpty()) {
@@ -199,6 +249,7 @@ fun RestaurantMobileApp(
                         NavigationBarItem(
                             selected = currentScreen == screen,
                             onClick = {
+                                onUserInteraction?.invoke()
                                 currentScreen = screen
                                 refreshAll()
                             },

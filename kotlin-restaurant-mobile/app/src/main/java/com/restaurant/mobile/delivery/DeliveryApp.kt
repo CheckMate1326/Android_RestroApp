@@ -226,7 +226,7 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                         "Edit address" -> AddressesScreen(vm)
                                         "Reviews",
                                         "Review" -> ReviewsScreen(vm)
-                                        "ForbiddenStaff" -> ForbiddenStaffScreen(vm)
+                                        "ForbiddenStaff" -> ForbiddenStaffScreen(vm, onOpenStaffPortal)
                                         else -> ProfileScreen(vm, onOpenStaffPortal)
                                     }
                                 }

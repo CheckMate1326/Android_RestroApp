@@ -985,7 +985,7 @@ fun ProfileScreen(vm: DeliveryViewModel, onOpenStaffPortal: (() -> Unit)? = null
 
 // 8. 403 Forbidden: Staff Access Required Screen
 @Composable
-fun ForbiddenStaffScreen(vm: DeliveryViewModel) {
+fun ForbiddenStaffScreen(vm: DeliveryViewModel, onOpenStaffPortal: (() -> Unit)? = null) {
     Page {
         Card(
             colors = CardDefaults.cardColors(containerColor = Color(0xFFDC2626).copy(alpha = 0.14f)),
@@ -1014,6 +1014,12 @@ fun ForbiddenStaffScreen(vm: DeliveryViewModel) {
                     fontSize = 13.sp,
                     color = RestroTokens.text
                 )
+            }
+        }
+
+        if (onOpenStaffPortal != null) {
+            Action("Unlock with 4-Digit Staff PIN Vault") {
+                onOpenStaffPortal()
             }
         }
 
