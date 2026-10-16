@@ -46,12 +46,28 @@ data class Catalog(
     val offers: List<Offer> = emptyList(),
 )
 
+enum class UserRole(val label: String) {
+    CUSTOMER("Customer"),
+    WAITER("Waiter / POS"),
+    CHEF_KDS("Kitchen Chef"),
+    ADMIN("Admin");
+
+    val isStaff: Boolean
+        get() = this != CUSTOMER
+
+    companion object {
+        fun fromString(value: String?): UserRole =
+            entries.find { it.name.equals(value?.trim(), ignoreCase = true) } ?: CUSTOMER
+    }
+}
+
 data class Profile(
     val id: String,
     val name: String,
     val email: String,
     val phone: String = "",
     val reducedGlass: Boolean = false,
+    val role: UserRole = UserRole.CUSTOMER,
 )
 
 data class Address(
@@ -115,7 +131,12 @@ data class Review(
     val at: String = Instant.now().toString(),
 )
 
-data class Credentials(val email: String, val password: String, val name: String = "")
+data class Credentials(
+    val email: String,
+    val password: String,
+    val name: String = "",
+    val role: String = "CUSTOMER",
+)
 
 data class Checkout(
     val addressId: String,
@@ -126,7 +147,12 @@ data class Checkout(
 
 data class OtpSendRequest(val target: String, val type: String = "phone")
 data class OtpSendResponse(val success: Boolean, val message: String, val target: String, val previewOtp: String? = null)
-data class OtpVerifyRequest(val target: String, val code: String, val name: String = "")
+data class OtpVerifyRequest(
+    val target: String,
+    val code: String,
+    val name: String = "",
+    val role: String = "CUSTOMER",
+)
 
 data class LocationPoint(val latitude: Double, val longitude: Double)
 data class RiderTracking(val name: String, val phone: String, val vehicleNumber: String, val currentLocation: LocationPoint)
