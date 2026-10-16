@@ -19,10 +19,13 @@ class RestroFirebaseBackendEngine(private val context: Context) {
     private val processedIdempotencyKeys = ConcurrentHashMap<String, DeliveryOrder>()
 
     init {
-        // Seed initial restaurant, menu, and staff RBAC accounts into SQLite if needed
+        // Seed initial restaurant, menu, staff RBAC accounts, and staff PIN vault into SQLite
         sqlDb.seedCatalogIfEmpty(MockCatalog.sample)
         sqlDb.seedDefaultStaffAccounts()
+        sqlDb.seedDefaultStaffPins()
     }
+
+    fun verifyStaffPin(pin: String): UserRole? = sqlDb.verifyStaffPin(pin)
 
     private fun resolveRoleForTarget(target: String, requestedRole: String): UserRole {
         val lower = target.lowercase()

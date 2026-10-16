@@ -727,6 +727,18 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         otpNotificationBanner = null
     }
 
+    fun verifyStaffPinAndPromoteRole(pin: String): UserRole? {
+        val verifiedRole = firebaseEngine.verifyStaffPin(pin) ?: return null
+        val current = profile
+        if (current != null) {
+            val updated = current.copy(role = verifiedRole)
+            profile = updated
+            session.saveProfile(updated)
+            sqlDb.saveUser(updated)
+        }
+        return verifiedRole
+    }
+
     fun logout() = run {
         try {
             api.request("/auth/logout", "POST", null)

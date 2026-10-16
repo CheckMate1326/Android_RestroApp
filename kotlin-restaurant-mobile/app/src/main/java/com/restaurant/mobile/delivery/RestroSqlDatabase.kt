@@ -19,7 +19,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         const val DATABASE_NAME = "restro_delivery.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
 
         // Table Names
         const val TABLE_USERS = "users"
@@ -29,6 +29,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         const val TABLE_ADDRESSES = "addresses"
         const val TABLE_REVIEWS = "reviews"
         const val TABLE_OTPS = "otps"
+        const val TABLE_STAFF_PINS = "staff_pins"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -144,9 +145,22 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             );
             """.trimIndent()
         )
+
+        // Staff PINs Vault Table
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_STAFF_PINS (
+                role TEXT PRIMARY KEY,
+                pin_hash TEXT NOT NULL,
+                label TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            """.trimIndent()
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_STAFF_PINS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_OTPS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_REVIEWS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_ADDRESSES")
@@ -309,6 +323,46 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 saveUser(staff)
             }
         }
+    }
+
+    private fun hashPin(pin: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val bytes = digest.digest("restro_pin_salt_$pin".toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    fun seedDefaultStaffPins() {
+        val db = writableDatabase
+        val defaults = listOf(
+            Triple(UserRole.WAITER, "1234", "Waiter / POS Vault"),
+            Triple(UserRole.CHEF_KDS, "5678", "Kitchen KDS Vault"),
+            Triple(UserRole.ADMIN, "9999", "Admin Manager Vault")
+        )
+        defaults.forEach { (role, rawPin, label) ->
+            val cv = ContentValues().apply {
+                put("role", role.name)
+                put("pin_hash", hashPin(rawPin))
+                put("label", label)
+                put("updated_at", Instant.now().toString())
+            }
+            db.insertWithOnConflict(TABLE_STAFF_PINS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        }
+    }
+
+    fun verifyStaffPin(pin: String): UserRole? {
+        val clean = pin.trim()
+        if (clean.length != 4) return null
+        val hashed = hashPin(clean)
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT role FROM $TABLE_STAFF_PINS WHERE pin_hash = ? LIMIT 1",
+            arrayOf(hashed)
+        )
+        val matchedRole = if (cursor.moveToFirst()) {
+            UserRole.fromString(cursor.getString(0))
+        } else null
+        cursor.close()
+        return matchedRole
     }
 
     fun saveUser(profile: Profile) {
