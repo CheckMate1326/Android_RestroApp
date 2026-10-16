@@ -42,9 +42,17 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
+            val deliveryVm: com.restaurant.mobile.delivery.DeliveryViewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel()
             var isStaffMode by rememberSaveable { mutableStateOf(false) }
 
-            if (isStaffMode) {
+            LaunchedEffect(deliveryVm.profile) {
+                if (deliveryVm.profile == null && isStaffMode) {
+                    isStaffMode = false
+                }
+            }
+
+            if (isStaffMode && deliveryVm.profile != null) {
                 RestaurantMobileApp(
                     onBackToCustomer = { isStaffMode = false },
                     onShowToast = { msg ->
@@ -53,7 +61,18 @@ class MainActivity : ComponentActivity() {
                 )
             } else {
                 com.restaurant.mobile.delivery.DeliveryApp(
-                    onOpenStaffPortal = { isStaffMode = true }
+                    vm = deliveryVm,
+                    onOpenStaffPortal = {
+                        if (deliveryVm.profile != null) {
+                            isStaffMode = true
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Please sign in first to access the Staff Portal",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 )
             }
         }
