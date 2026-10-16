@@ -19,8 +19,19 @@ class RestroFirebaseBackendEngine(private val context: Context) {
     private val processedIdempotencyKeys = ConcurrentHashMap<String, DeliveryOrder>()
 
     init {
-        // Seed initial restaurant and menu data into SQLite if needed
+        // Seed initial restaurant, menu, and staff RBAC accounts into SQLite if needed
         sqlDb.seedCatalogIfEmpty(MockCatalog.sample)
+        sqlDb.seedDefaultStaffAccounts()
+    }
+
+    private fun resolveRoleForTarget(target: String, requestedRole: String): UserRole {
+        val lower = target.lowercase()
+        return when {
+            lower.startsWith("admin@") || lower.contains("admin") -> UserRole.ADMIN
+            lower.startsWith("waiter@") || lower.contains("waiter") -> UserRole.WAITER
+            lower.startsWith("chef@") || lower.contains("chef") -> UserRole.CHEF_KDS
+            else -> UserRole.fromString(requestedRole)
+        }
     }
 
     // -------------------------------------------------------------
@@ -59,6 +70,8 @@ class RestroFirebaseBackendEngine(private val context: Context) {
             throw ApiFailure(401, errorMsg ?: "Invalid OTP verification code")
         }
 
+        val resolvedRole = resolveRoleForTarget(target, request.role)
+
         // Retrieve existing profile or auto-provision new Firebase user profile
         var userProfile = sqlDb.getUserByTarget(target)
         if (userProfile == null) {
@@ -68,13 +81,17 @@ class RestroFirebaseBackendEngine(private val context: Context) {
                 id = generatedId,
                 name = request.name.ifBlank { if (isEmail) target.substringBefore("@") else "Foodie Diner" },
                 email = if (isEmail) target else "${target.takeLast(6)}@restaurant.firebase.io",
-                phone = if (!isEmail) target else "+91 98765 43210"
+                phone = if (!isEmail) target else "+91 98765 43210",
+                role = resolvedRole
             )
+            sqlDb.saveUser(userProfile)
+        } else if (userProfile.role != resolvedRole && request.role.isNotBlank()) {
+            userProfile = userProfile.copy(role = resolvedRole)
             sqlDb.saveUser(userProfile)
         }
 
-        // Issue Firebase Auth token
-        val firebaseToken = "firebase_jwt_" + UUID.randomUUID().toString()
+        // Issue Firebase Auth token with role claim
+        val firebaseToken = "firebase_jwt_${userProfile.role.name}_" + UUID.randomUUID().toString()
         return AuthResult(token = firebaseToken, profile = userProfile)
     }
 

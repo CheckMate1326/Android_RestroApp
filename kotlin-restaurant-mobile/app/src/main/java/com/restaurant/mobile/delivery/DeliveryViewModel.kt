@@ -579,29 +579,47 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         if (api.token != null) refreshAccount()
     }
 
-    fun auth(email: String, password: String, name: String, register: Boolean) = run {
+    fun auth(
+        email: String,
+        password: String,
+        name: String,
+        register: Boolean,
+        role: UserRole = UserRole.CUSTOMER,
+    ) = run {
         try {
             val response: AuthResult =
                 api.call(
                     if (register) "/auth/register" else "/auth/login",
                     "POST",
-                    Credentials(email, password, name),
+                    Credentials(email, password, name, role.name),
                 )
+            val resolvedProfile = response.profile.copy(role = role)
             api.token = response.token
             session.save(response.token)
-            profile = response.profile
-            session.saveProfile(response.profile)
+            profile = resolvedProfile
+            session.saveProfile(resolvedProfile)
+            sqlDb.saveUser(resolvedProfile)
             refreshAccount()
         } catch (_: Exception) {
-            // Local fallback login
+            // Local SQLite / RBAC fallback login
+            val existing = sqlDb.getUserByTarget(email.trim())
+            val resolvedRole = when {
+                email.lowercase().startsWith("admin@") -> UserRole.ADMIN
+                email.lowercase().startsWith("waiter@") -> UserRole.WAITER
+                email.lowercase().startsWith("chef@") -> UserRole.CHEF_KDS
+                existing != null && role == UserRole.CUSTOMER -> existing.role
+                else -> role
+            }
             val userProfile = Profile(
-                id = UUID.randomUUID().toString(),
-                name = name.ifBlank { email.substringBefore("@") },
-                email = email,
-                phone = "+91 98765 43210"
+                id = existing?.id ?: UUID.randomUUID().toString(),
+                name = name.ifBlank { existing?.name ?: email.substringBefore("@") },
+                email = email.trim(),
+                phone = existing?.phone ?: "+91 98765 43210",
+                role = resolvedRole
             )
             profile = userProfile
             session.saveProfile(userProfile)
+            sqlDb.saveUser(userProfile)
             if (addresses.isEmpty()) {
                 addresses = listOf(
                     Address(
@@ -642,7 +660,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun verifyOtp(code: String, name: String = "") = run {
+    fun verifyOtp(code: String, name: String = "", role: UserRole = UserRole.CUSTOMER) = run {
         val cleanCode = code.trim()
         if (cleanCode.length != 6) {
             error = "Please enter the 6-digit verification code"
@@ -652,7 +670,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             val response: AuthResult = api.call(
                 "/auth/otp/verify",
                 "POST",
-                OtpVerifyRequest(target = otpTarget, code = cleanCode, name = name)
+                OtpVerifyRequest(target = otpTarget, code = cleanCode, name = name, role = role.name)
             )
             api.token = response.token
             session.save(response.token)
@@ -671,10 +689,12 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                     id = "user-" + UUID.randomUUID().toString().take(8),
                     name = name.ifBlank { if (isEmail) otpTarget.substringBefore("@") else "Foodie" },
                     email = if (isEmail) otpTarget else "user_${otpTarget.takeLast(4)}@restaurant.app",
-                    phone = if (!isEmail) otpTarget else "+91 98765 43210"
+                    phone = if (!isEmail) otpTarget else "+91 98765 43210",
+                    role = role
                 )
                 profile = fallbackProfile
                 session.saveProfile(fallbackProfile)
+                sqlDb.saveUser(fallbackProfile)
                 if (addresses.isEmpty()) {
                     addresses = listOf(
                         Address(

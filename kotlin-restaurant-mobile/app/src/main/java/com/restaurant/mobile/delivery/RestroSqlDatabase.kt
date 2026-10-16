@@ -19,7 +19,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         const val DATABASE_NAME = "restro_delivery.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
 
         // Table Names
         const val TABLE_USERS = "users"
@@ -40,6 +40,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 name TEXT NOT NULL,
                 email TEXT NOT NULL,
                 phone TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'CUSTOMER',
                 created_at TEXT NOT NULL
             );
             """.trimIndent()
@@ -297,6 +298,19 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     // USERS & PROFILE
     // -------------------------------------------------------------
 
+    fun seedDefaultStaffAccounts() {
+        val defaultStaff = listOf(
+            Profile("staff-waiter-1", "Rohan Verma (Waiter)", "waiter@restro.app", "+91 90000 11111", role = UserRole.WAITER),
+            Profile("staff-chef-1", "Chef Marco (Kitchen)", "chef@restro.app", "+91 90000 22222", role = UserRole.CHEF_KDS),
+            Profile("staff-admin-1", "Ananya Rao (Manager)", "admin@restro.app", "+91 90000 99999", role = UserRole.ADMIN)
+        )
+        defaultStaff.forEach { staff ->
+            if (getUserByTarget(staff.email) == null) {
+                saveUser(staff)
+            }
+        }
+    }
+
     fun saveUser(profile: Profile) {
         val db = writableDatabase
         val cv = ContentValues().apply {
@@ -304,6 +318,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("name", profile.name)
             put("email", profile.email)
             put("phone", profile.phone)
+            put("role", profile.role.name)
             put("created_at", Instant.now().toString())
         }
         db.insertWithOnConflict(TABLE_USERS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
@@ -316,11 +331,14 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             arrayOf(target, target)
         )
         val profile = if (cursor.moveToFirst()) {
+            val roleIdx = cursor.getColumnIndex("role")
+            val roleStr = if (roleIdx >= 0 && !cursor.isNull(roleIdx)) cursor.getString(roleIdx) else "CUSTOMER"
             Profile(
                 id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
                 name = cursor.getString(cursor.getColumnIndexOrThrow("name")),
                 email = cursor.getString(cursor.getColumnIndexOrThrow("email")),
-                phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"))
+                phone = cursor.getString(cursor.getColumnIndexOrThrow("phone")),
+                role = UserRole.fromString(roleStr)
             )
         } else null
         cursor.close()
