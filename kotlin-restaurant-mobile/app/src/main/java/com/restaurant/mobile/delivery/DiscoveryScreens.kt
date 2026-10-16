@@ -282,14 +282,35 @@ fun AuthScreen(vm: DeliveryViewModel) {
             modifier = Modifier.padding(vertical = 4.dp)
         )
 
-        OutlinedButton(
-            onClick = { vm.demoLogin() },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            shape = RoundedCornerShape(16.dp)
+        Surface(
+            color = RestroTokens.surface,
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Default.Fastfood, null)
-            Spacer(Modifier.width(8.dp))
-            Text("Explore as Demo Diner", fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    Icons.Default.VerifiedUser,
+                    contentDescription = null,
+                    tint = RestroTokens.green,
+                    modifier = Modifier.size(20.dp)
+                )
+                Column {
+                    Text(
+                        "Mandatory Auth Gatekeeper Active",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        "All ordering, table reservations, and staff portals require verified OTP or password authentication.",
+                        fontSize = 11.sp,
+                        color = RestroTokens.muted
+                    )
+                }
+            }
         }
     }
 }

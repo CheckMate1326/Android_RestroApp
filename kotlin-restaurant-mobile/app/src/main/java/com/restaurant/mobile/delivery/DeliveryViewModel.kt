@@ -562,7 +562,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             orders = api.call("/orders")
         } catch (_: Exception) {
             if (profile == null) {
-                profile = Profile("demo-user", "Aarav Sharma", "aarav@example.com", "+91 98765 43210")
+                profile = session.loadProfile()
             }
         }
     }
@@ -577,33 +577,6 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             catalog = MockCatalog.sample
         }
         if (api.token != null) refreshAccount()
-    }
-
-    fun demoLogin() {
-        val demoProfile = Profile("demo-1", "Aarav Sharma", "aarav@example.com", "+91 98765 43210")
-        profile = demoProfile
-        session.saveProfile(demoProfile)
-        if (addresses.isEmpty()) {
-            addresses = listOf(
-                Address(
-                    id = "addr-1",
-                    label = "Home",
-                    line = "Flat 402, Green Glen Layout, Bellandur",
-                    city = "Bengaluru",
-                    postcode = "560103",
-                    phone = "+91 98765 43210"
-                ),
-                Address(
-                    id = "addr-2",
-                    label = "Office",
-                    line = "Prestige Tech Park, Outer Ring Road",
-                    city = "Bengaluru",
-                    postcode = "560103",
-                    phone = "+91 98765 43210"
-                )
-            )
-        }
-        route = "Home"
     }
 
     fun auth(email: String, password: String, name: String, register: Boolean) = run {
