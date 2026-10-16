@@ -40,6 +40,65 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                         CircularProgressIndicator(Modifier.padding(24.dp))
                     }
                 }
+            else if (vm.profile == null)
+                Box(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
+                    Column(Modifier.fillMaxSize()) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("restro", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.width(8.dp))
+                                Surface(
+                                    color = RestroTokens.coral.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        "AUTH LOCKED",
+                                        color = RestroTokens.coral,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Authentication Required",
+                                tint = RestroTokens.coral,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        vm.error?.let { message ->
+                            Surface(color = MaterialTheme.colorScheme.errorContainer) {
+                                Row(
+                                    Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        message,
+                                        Modifier.weight(1f),
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    IconButton(onClick = { vm.error = null }) {
+                                        Icon(Icons.Default.Close, "Dismiss error")
+                                    }
+                                }
+                            }
+                        }
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.TopCenter,
+                        ) {
+                            Box(Modifier.widthIn(max = 560.dp).fillMaxSize()) {
+                                AuthScreen(vm)
+                            }
+                        }
+                    }
+                }
             else
                 Box(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
                     Column(Modifier.fillMaxSize().capture(backdrop)) {
@@ -53,7 +112,7 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                 }
                             Column(
                                 Modifier.weight(1f).clickable {
-                                    if (vm.profile != null) showLandmarkPicker = true
+                                    showLandmarkPicker = true
                                 }
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -102,23 +161,22 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                     Icon(Icons.Default.Storefront, "Staff POS / KDS", tint = RestroTokens.coral)
                                 }
                             }
-                            if (vm.profile != null)
-                                IconButton(onClick = { vm.route = "Cart" }) {
-                                    BadgedBox(
-                                        badge = {
-                                            if (vm.cart.lines.isNotEmpty())
-                                                Badge {
-                                                    Text(
-                                                        vm.cart.lines
-                                                            .sumOf { it.quantity }
-                                                            .toString()
-                                                    )
-                                                }
-                                        }
-                                    ) {
-                                        Icon(Icons.Default.ShoppingBag, "Open cart")
+                            IconButton(onClick = { vm.route = "Cart" }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (vm.cart.lines.isNotEmpty())
+                                            Badge {
+                                                Text(
+                                                    vm.cart.lines
+                                                        .sumOf { it.quantity }
+                                                        .toString()
+                                                )
+                                            }
                                     }
+                                ) {
+                                    Icon(Icons.Default.ShoppingBag, "Open cart")
                                 }
+                            }
                         }
                         if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                         vm.error?.let { message ->
@@ -141,40 +199,38 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                 }
                             }
                         }
-                        if (vm.profile == null) AuthScreen(vm)
-                        else
-                            PullToRefreshBox(
-                                isRefreshing = vm.busy,
-                                onRefresh = vm::refresh,
-                                modifier = Modifier.weight(1f),
+                        PullToRefreshBox(
+                            isRefreshing = vm.busy,
+                            onRefresh = vm::refresh,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Box(
+                                Modifier.fillMaxSize().padding(bottom = 88.dp),
+                                contentAlignment = Alignment.TopCenter,
                             ) {
-                                Box(
-                                    Modifier.fillMaxSize().padding(bottom = 88.dp),
-                                    contentAlignment = Alignment.TopCenter,
-                                ) {
-                                    Box(Modifier.widthIn(max = 840.dp).fillMaxSize()) {
-                                        when (vm.route) {
-                                            "Home",
-                                            "Search",
-                                            "Favorites",
-                                            "Restaurant" -> Discovery(vm)
-                                            "Map" -> DeliveryInteractiveMap(vm, onClose = { vm.route = "Home" })
-                                            "Food" -> FoodScreen(vm)
-                                            "Cart" -> CartScreen(vm)
-                                            "Checkout",
-                                            "Payment" -> CheckoutScreen(vm)
-                                            "Orders",
-                                            "Confirmation",
-                                            "Tracking" -> OrdersScreen(vm)
-                                            "Addresses",
-                                            "Edit address" -> AddressesScreen(vm)
-                                            "Reviews",
-                                            "Review" -> ReviewsScreen(vm)
-                                            else -> ProfileScreen(vm)
-                                        }
+                                Box(Modifier.widthIn(max = 840.dp).fillMaxSize()) {
+                                    when (vm.route) {
+                                        "Home",
+                                        "Search",
+                                        "Favorites",
+                                        "Restaurant" -> Discovery(vm)
+                                        "Map" -> DeliveryInteractiveMap(vm, onClose = { vm.route = "Home" })
+                                        "Food" -> FoodScreen(vm)
+                                        "Cart" -> CartScreen(vm)
+                                        "Checkout",
+                                        "Payment" -> CheckoutScreen(vm)
+                                        "Orders",
+                                        "Confirmation",
+                                        "Tracking" -> OrdersScreen(vm)
+                                        "Addresses",
+                                        "Edit address" -> AddressesScreen(vm)
+                                        "Reviews",
+                                        "Review" -> ReviewsScreen(vm)
+                                        else -> ProfileScreen(vm)
                                     }
                                 }
                             }
+                        }
                     }
                     // In-Menu Sticky Cart Pill (Floating above navigation bar)
                     if (vm.cart.lines.isNotEmpty() && vm.route in listOf("Home", "Search", "Favorites", "Restaurant")) {
