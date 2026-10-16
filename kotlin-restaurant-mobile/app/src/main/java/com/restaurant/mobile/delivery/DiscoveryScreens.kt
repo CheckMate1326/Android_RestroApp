@@ -37,6 +37,8 @@ fun AuthScreen(vm: DeliveryViewModel) {
     var register by rememberSaveable { mutableStateOf(false) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var selectedRoleName by rememberSaveable { mutableStateOf(UserRole.CUSTOMER.name) }
+    val selectedRole = UserRole.fromString(selectedRoleName)
 
     Page {
         vm.catalog.dishes.firstOrNull()?.let {
@@ -55,6 +57,43 @@ fun AuthScreen(vm: DeliveryViewModel) {
             else if (register) "Create your Restro account."
             else "Sign in to discover, save and order.",
         )
+
+        // Role-Based Access Control (RBAC) Selector
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "Access Role (RBAC)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = RestroTokens.muted
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(UserRole.entries) { role ->
+                    FilterChip(
+                        selected = selectedRole == role,
+                        onClick = { selectedRoleName = role.name },
+                        label = {
+                            Text(
+                                role.label,
+                                fontSize = 12.sp,
+                                fontWeight = if (selectedRole == role) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = when (role) {
+                                    UserRole.CUSTOMER -> Icons.Default.Person
+                                    UserRole.WAITER -> Icons.Default.PointOfSale
+                                    UserRole.CHEF_KDS -> Icons.Default.SoupKitchen
+                                    UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                                },
+                                contentDescription = role.label,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            }
+        }
 
         // Auth Mode Switcher Tab
         Row(
@@ -228,10 +267,10 @@ fun AuthScreen(vm: DeliveryViewModel) {
                         )
 
                         Action(
-                            label = "Verify & Continue",
+                            label = "Verify & Continue (${selectedRole.label})",
                             enabled = !vm.busy && otpCode.length == 6
                         ) {
-                            vm.verifyOtp(otpCode, name)
+                            vm.verifyOtp(otpCode, name, selectedRole)
                         }
 
                         Row(
@@ -261,13 +300,13 @@ fun AuthScreen(vm: DeliveryViewModel) {
             Field("Email", email, { email = it })
             Field("Password · at least 10 characters", password, { password = it }, true)
             Action(
-                if (register) "Create account" else "Sign in",
+                if (register) "Create account (${selectedRole.label})" else "Sign in (${selectedRole.label})",
                 !vm.busy &&
                     email.isNotBlank() &&
                     password.length >= 10 &&
                     (!register || name.trim().length >= 2),
             ) {
-                vm.auth(email, password, name, register)
+                vm.auth(email, password, name, register, selectedRole)
             }
             TextButton(onClick = { register = !register }) {
                 Text(

@@ -826,11 +826,11 @@ fun ReviewsScreen(vm: DeliveryViewModel) {
 
 // 7. Profile Screen
 @Composable
-fun ProfileScreen(vm: DeliveryViewModel) {
+fun ProfileScreen(vm: DeliveryViewModel, onOpenStaffPortal: (() -> Unit)? = null) {
     val p = vm.profile
 
     Page {
-        Heading("Your Profile", "Manage preferences, addresses and settings")
+        Heading("Your Profile", "Manage preferences, addresses and RBAC role")
 
         Card(
             colors = CardDefaults.cardColors(containerColor = RestroTokens.surface),
@@ -838,7 +838,26 @@ fun ProfileScreen(vm: DeliveryViewModel) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(p?.name ?: "Valued Diner", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(p?.name ?: "Valued Diner", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Surface(
+                        color = if (p?.role?.isStaff == true) RestroTokens.green.copy(alpha = 0.2f)
+                        else RestroTokens.coral.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = p?.role?.label?.uppercase() ?: "CUSTOMER",
+                            color = if (p?.role?.isStaff == true) RestroTokens.green else RestroTokens.coral,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
                 Text(p?.email ?: "", color = RestroTokens.muted, fontSize = 14.sp)
                 if (!p?.phone.isNullOrBlank()) {
                     Text("Phone: ${p?.phone}", color = RestroTokens.muted, fontSize = 13.sp)
@@ -847,6 +866,36 @@ fun ProfileScreen(vm: DeliveryViewModel) {
         }
 
         Text("Shortcuts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable {
+                    if (p?.role?.isStaff == true && onOpenStaffPortal != null) {
+                        onOpenStaffPortal()
+                    } else {
+                        vm.route = "ForbiddenStaff"
+                    }
+                }
+                .background(RestroTokens.surface)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Storefront, null, tint = RestroTokens.coral)
+                Column {
+                    Text("Staff Operations Portal (POS / KDS / Admin)", fontWeight = FontWeight.Medium)
+                    Text(
+                        if (p?.role?.isStaff == true) "Authorized as ${p.role.label}"
+                        else "Requires Waiter, Kitchen Chef, or Admin role",
+                        fontSize = 11.sp,
+                        color = RestroTokens.muted
+                    )
+                }
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = RestroTokens.muted)
+        }
 
         Row(
             Modifier.fillMaxWidth()
@@ -933,3 +982,54 @@ fun ProfileScreen(vm: DeliveryViewModel) {
         }
     }
 }
+
+// 8. 403 Forbidden: Staff Access Required Screen
+@Composable
+fun ForbiddenStaffScreen(vm: DeliveryViewModel) {
+    Page {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFDC2626).copy(alpha = 0.14f)),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.GppBad,
+                    contentDescription = "403 Forbidden",
+                    tint = Color(0xFFF87171),
+                    modifier = Modifier.size(54.dp)
+                )
+                Text(
+                    "403 Forbidden: Staff Access Required",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    color = Color(0xFFF87171)
+                )
+                Text(
+                    "Your account (${vm.profile?.email ?: "Customer"}) is currently authenticated with the '${vm.profile?.role?.label ?: "Customer"}' role. Access to the POS Cashier, Kitchen Display System (KDS), and Admin Analytics is strictly restricted to authorized restaurant staff.",
+                    fontSize = 13.sp,
+                    color = RestroTokens.text
+                )
+            }
+        }
+
+        Action("Return to Customer Home") {
+            vm.route = "Home"
+        }
+
+        OutlinedButton(
+            onClick = vm::logout,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(Icons.Default.SwitchAccount, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Sign Out & Switch to Staff Account", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+

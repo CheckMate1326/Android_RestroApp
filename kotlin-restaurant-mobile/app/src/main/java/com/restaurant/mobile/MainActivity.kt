@@ -47,13 +47,14 @@ class MainActivity : ComponentActivity() {
             var isStaffMode by rememberSaveable { mutableStateOf(false) }
 
             LaunchedEffect(deliveryVm.profile) {
-                if (deliveryVm.profile == null && isStaffMode) {
+                if ((deliveryVm.profile == null || deliveryVm.profile?.role?.isStaff != true) && isStaffMode) {
                     isStaffMode = false
                 }
             }
 
-            if (isStaffMode && deliveryVm.profile != null) {
+            if (isStaffMode && deliveryVm.profile?.role?.isStaff == true) {
                 RestaurantMobileApp(
+                    userRole = deliveryVm.profile?.role ?: com.restaurant.mobile.delivery.UserRole.WAITER,
                     onBackToCustomer = { isStaffMode = false },
                     onShowToast = { msg ->
                         Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
@@ -63,14 +64,22 @@ class MainActivity : ComponentActivity() {
                 com.restaurant.mobile.delivery.DeliveryApp(
                     vm = deliveryVm,
                     onOpenStaffPortal = {
-                        if (deliveryVm.profile != null) {
-                            isStaffMode = true
-                        } else {
+                        val profile = deliveryVm.profile
+                        if (profile == null) {
                             Toast.makeText(
                                 this@MainActivity,
                                 "Please sign in first to access the Staff Portal",
                                 Toast.LENGTH_SHORT
                             ).show()
+                        } else if (!profile.role.isStaff) {
+                            deliveryVm.route = "ForbiddenStaff"
+                            Toast.makeText(
+                                this@MainActivity,
+                                "403 Forbidden: Staff Access Required",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            isStaffMode = true
                         }
                     }
                 )
@@ -89,11 +98,22 @@ enum class NavigationScreen(val title: String, val icon: ImageVector) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantMobileApp(
+    userRole: com.restaurant.mobile.delivery.UserRole = com.restaurant.mobile.delivery.UserRole.ADMIN,
     onBackToCustomer: (() -> Unit)? = null,
     onShowToast: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var currentScreen by remember { mutableStateOf(NavigationScreen.POS) }
+    val allowedScreens = remember(userRole) {
+        when (userRole) {
+            com.restaurant.mobile.delivery.UserRole.WAITER -> listOf(NavigationScreen.POS, NavigationScreen.TABLES)
+            com.restaurant.mobile.delivery.UserRole.CHEF_KDS -> listOf(NavigationScreen.KDS, NavigationScreen.TABLES)
+            com.restaurant.mobile.delivery.UserRole.ADMIN -> NavigationScreen.entries
+            com.restaurant.mobile.delivery.UserRole.CUSTOMER -> emptyList()
+        }
+    }
+    var currentScreen by remember(userRole) {
+        mutableStateOf(allowedScreens.firstOrNull() ?: NavigationScreen.POS)
+    }
 
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var menuItems by remember { mutableStateOf<List<MenuItem>>(emptyList()) }
@@ -147,24 +167,26 @@ fun RestaurantMobileApp(
                                 color = Color(0xFF1C1917)
                             )
                             Text(
-                                text = "Artisanal Mobile OS • ${currentScreen.title}",
+                                text = "${userRole.label} • ${currentScreen.title}",
                                 fontSize = 12.sp,
                                 color = Color(0xFF78716C)
                             )
                         }
                     },
                     actions = {
-                        IconButton(onClick = { isCartOpen = !isCartOpen }) {
-                            BadgedBox(
-                                badge = {
-                                    if (cart.isNotEmpty()) {
-                                        Badge(containerColor = Color(0xFFC2410C)) {
-                                            Text(cart.sumOf { it.quantity }.toString(), color = Color.White)
+                        if (currentScreen == NavigationScreen.POS) {
+                            IconButton(onClick = { isCartOpen = !isCartOpen }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (cart.isNotEmpty()) {
+                                            Badge(containerColor = Color(0xFFC2410C)) {
+                                                Text(cart.sumOf { it.quantity }.toString(), color = Color.White)
+                                            }
                                         }
                                     }
+                                ) {
+                                    Icon(Icons.Default.ShoppingCart, contentDescription = "Cart", tint = Color(0xFF1C1917))
                                 }
-                            ) {
-                                Icon(Icons.Default.ShoppingCart, contentDescription = "Cart", tint = Color(0xFF1C1917))
                             }
                         }
                     },
@@ -173,7 +195,7 @@ fun RestaurantMobileApp(
             },
             bottomBar = {
                 NavigationBar(containerColor = Color.White) {
-                    NavigationScreen.values().forEach { screen ->
+                    allowedScreens.forEach { screen ->
                         NavigationBarItem(
                             selected = currentScreen == screen,
                             onClick = {

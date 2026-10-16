@@ -156,7 +156,7 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                     )
                                 }
                             }
-                            if (onOpenStaffPortal != null) {
+                            if (onOpenStaffPortal != null && vm.profile?.role?.isStaff == true) {
                                 IconButton(onClick = onOpenStaffPortal) {
                                     Icon(Icons.Default.Storefront, "Staff POS / KDS", tint = RestroTokens.coral)
                                 }
@@ -226,7 +226,8 @@ fun DeliveryApp(vm: DeliveryViewModel = viewModel(), onOpenStaffPortal: (() -> U
                                         "Edit address" -> AddressesScreen(vm)
                                         "Reviews",
                                         "Review" -> ReviewsScreen(vm)
-                                        else -> ProfileScreen(vm)
+                                        "ForbiddenStaff" -> ForbiddenStaffScreen(vm)
+                                        else -> ProfileScreen(vm, onOpenStaffPortal)
                                     }
                                 }
                             }
