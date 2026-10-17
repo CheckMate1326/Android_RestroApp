@@ -455,6 +455,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     var otpTarget by mutableStateOf("")
     var otpPreviewCode by mutableStateOf<String?>(null)
     var otpNotificationBanner by mutableStateOf<String?>(null)
+    var sessionExpiredBanner by mutableStateOf<String?>(null)
 
     // Proximity & Landmark Feed State
     var currentLandmark by mutableStateOf("Indiranagar, Bengaluru")
@@ -471,6 +472,28 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     // Android Native Notification Channel Manager
     val notificationHelper = DeliveryNotificationHelper(app)
 
+    fun revokeSession(reason: String = "Your session has expired. Please sign in again.") {
+        session.save(null)
+        session.saveProfile(null)
+        api.token = null
+        profile = null
+        otpSent = false
+        otpTarget = ""
+        otpPreviewCode = null
+        otpNotificationBanner = null
+        cart = Cart()
+        quote = null
+        addresses = emptyList()
+        orders = emptyList()
+        favorites = emptyList()
+        route = "Home"
+        sessionExpiredBanner = reason
+    }
+
+    fun dismissSessionExpiredBanner() {
+        sessionExpiredBanner = null
+    }
+
     fun applyCoupon(code: String) = run {
         try {
             cart = api.call("/cart", "PUT", cart.copy(coupon = code))
@@ -482,11 +505,28 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        api.onSessionRevoked = { reason ->
+            viewModelScope.launch {
+                revokeSession(reason)
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                delay(30_000L)
+                if (profile != null && session.isSessionExpired()) {
+                    revokeSession("Your session has expired. Please sign in again.")
+                }
+            }
+        }
         run {
-            api.token = session.load()
-            val savedProfile = session.loadProfile()
-            if (savedProfile != null) {
-                profile = savedProfile
+            if (session.isSessionExpired()) {
+                revokeSession("Your session has expired. Please sign in again.")
+            } else {
+                api.token = session.load()
+                val savedProfile = session.loadProfile()
+                if (savedProfile != null) {
+                    profile = savedProfile
+                }
             }
             try {
                 val remoteCatalog: Catalog = api.call("/catalog")
@@ -533,15 +573,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 if (e is ApiFailure && e.status == 401) {
-                    api.token = null
-                    session.save(null)
-                    profile = null
-                    cart = Cart()
-                    addresses = emptyList()
-                    orders = emptyList()
-                    favorites = emptyList()
-                    quote = null
-                    route = "Home"
+                    revokeSession("Your session has expired. Please sign in again.")
                 }
                 error =
                     if (e is ApiFailure) e.message
@@ -599,6 +631,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             profile = resolvedProfile
             session.saveProfile(resolvedProfile)
             sqlDb.saveUser(resolvedProfile)
+            sessionExpiredBanner = null
             refreshAccount()
         } catch (_: Exception) {
             // Local SQLite / RBAC fallback login
@@ -617,9 +650,13 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                 phone = existing?.phone ?: "+91 98765 43210",
                 role = resolvedRole
             )
+            val fallbackToken = "local_jwt_${resolvedRole.name}_${UUID.randomUUID()}"
+            api.token = fallbackToken
+            session.save(fallbackToken)
             profile = userProfile
             session.saveProfile(userProfile)
             sqlDb.saveUser(userProfile)
+            sessionExpiredBanner = null
             if (addresses.isEmpty()) {
                 addresses = listOf(
                     Address(
@@ -676,6 +713,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
             session.save(response.token)
             profile = response.profile
             session.saveProfile(response.profile)
+            sessionExpiredBanner = null
             otpSent = false
             otpPreviewCode = null
             otpNotificationBanner = null
@@ -692,9 +730,13 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
                     phone = if (!isEmail) otpTarget else "+91 98765 43210",
                     role = role
                 )
+                val fallbackToken = "local_jwt_${role.name}_${UUID.randomUUID()}"
+                api.token = fallbackToken
+                session.save(fallbackToken)
                 profile = fallbackProfile
                 session.saveProfile(fallbackProfile)
                 sqlDb.saveUser(fallbackProfile)
+                sessionExpiredBanner = null
                 if (addresses.isEmpty()) {
                     addresses = listOf(
                         Address(

@@ -49,6 +49,45 @@ fun AuthScreen(vm: DeliveryViewModel) {
             )
         }
 
+        vm.sessionExpiredBanner?.let { expiredMsg ->
+            Surface(
+                color = Color(0xFFDC2626).copy(alpha = 0.18f),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.WarningAmber,
+                        contentDescription = "Session Expired",
+                        tint = Color(0xFFF87171),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = expiredMsg,
+                        color = Color(0xFFF87171),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { vm.dismissSessionExpiredBanner() },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Dismiss",
+                            tint = Color(0xFFF87171),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         Heading(
             if (authMode == 0) "Fast & Secure\nSign In."
             else if (register) "Your next favourite\nstarts here."
