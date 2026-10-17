@@ -203,7 +203,7 @@ router.get("/health", (req, res) => {
 
 // Password Login
 router.post("/auth/login", (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, role } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: "FIELD_VALIDATION_FAILED", message: "Email and password are required." });
   }
@@ -218,18 +218,22 @@ router.post("/auth/login", (req, res) => {
     return res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
   }
 
+  if (role && ["CUSTOMER", "WAITER", "CHEF_KDS", "ADMIN"].includes(role)) {
+    user.role = role;
+  }
+
   const token = "jwt-" + crypto.randomUUID();
   db.sessions.set(token, user.id);
 
   res.json({
     token,
-    profile: { id: user.id, name: user.name, email: user.email, phone: user.phone, reducedGlass: false }
+    profile: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role || "CUSTOMER", reducedGlass: false }
   });
 });
 
 // User Registration
 router.post("/auth/register", (req, res) => {
-  const { email, password, name, phone } = req.body || {};
+  const { email, password, name, phone, role } = req.body || {};
   if (!email || !password || !name) {
     return res.status(400).json({ error: "FIELD_VALIDATION_FAILED", message: "Name, email and password are required." });
   }
@@ -243,12 +247,15 @@ router.post("/auth/register", (req, res) => {
     return res.status(409).json({ error: "USER_EXISTS", message: "An account with this email already exists." });
   }
 
+  const resolvedRole = ["CUSTOMER", "WAITER", "CHEF_KDS", "ADMIN"].includes(role) ? role : "CUSTOMER";
+
   const newUser = {
     id: "usr-" + (db.users.length + 1),
     email,
     password,
     name,
-    phone: phone || "+91 98765 43210"
+    phone: phone || "+91 98765 43210",
+    role: resolvedRole
   };
   db.users.push(newUser);
 
@@ -257,7 +264,7 @@ router.post("/auth/register", (req, res) => {
 
   res.json({
     token,
-    profile: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, reducedGlass: false }
+    profile: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, role: newUser.role, reducedGlass: false }
   });
 });
 
@@ -295,7 +302,7 @@ router.post("/auth/otp/send", (req, res) => {
 
 // Verify OTP
 router.post("/auth/otp/verify", (req, res) => {
-  const { target, code, name } = req.body || {};
+  const { target, code, name, role } = req.body || {};
   if (!target || !code) {
     return res.status(400).json({ error: "FIELD_VALIDATION_FAILED", message: "Target and 6-digit verification code are required." });
   }
@@ -323,6 +330,8 @@ router.post("/auth/otp/verify", (req, res) => {
   // Verification successful! Invalidate OTP
   db.otps.delete(target.trim());
 
+  const resolvedRole = ["CUSTOMER", "WAITER", "CHEF_KDS", "ADMIN"].includes(role) ? role : "CUSTOMER";
+
   // Find or auto-provision user profile
   let user = db.users.find(u => u.phone === target.trim() || u.email.toLowerCase() === target.trim().toLowerCase());
   if (!user) {
@@ -332,9 +341,12 @@ router.post("/auth/otp/verify", (req, res) => {
       email: isEmail ? target.trim() : `${target.replace(/\D/g, "")}@restro.in`,
       name: name || (isEmail ? target.split("@")[0] : `Diner ${target.slice(-4)}`),
       phone: isEmail ? "+91 98765 43210" : target.trim(),
+      role: resolvedRole,
       password: crypto.randomUUID()
     };
     db.users.push(user);
+  } else {
+    user.role = resolvedRole;
   }
 
   const token = "jwt-" + crypto.randomUUID();
@@ -342,8 +354,23 @@ router.post("/auth/otp/verify", (req, res) => {
 
   res.json({
     token,
-    profile: { id: user.id, name: user.name, email: user.email, phone: user.phone, reducedGlass: false }
+    profile: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role || "CUSTOMER", reducedGlass: false }
   });
+});
+
+// Staff Quick-Access PIN Vault Verification
+router.post("/auth/pin/verify", (req, res) => {
+  const { pin } = req.body || {};
+  const pinMap = {
+    "1234": "WAITER",
+    "5678": "CHEF_KDS",
+    "9999": "ADMIN"
+  };
+  const matchedRole = pinMap[String(pin || "").trim()];
+  if (!matchedRole) {
+    return res.status(401).json({ error: "INVALID_STAFF_PIN", message: "Invalid 4-digit staff PIN." });
+  }
+  res.json({ valid: true, role: matchedRole });
 });
 
 // ------------------------------------------

@@ -512,7 +512,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             while (true) {
-                delay(30_000L)
+                kotlinx.coroutines.delay(30_000L)
                 if (profile != null && session.isSessionExpired()) {
                     revokeSession("Your session has expired. Please sign in again.")
                 }
@@ -770,7 +770,7 @@ class DeliveryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun verifyStaffPinAndPromoteRole(pin: String): UserRole? {
-        val verifiedRole = firebaseEngine.verifyStaffPin(pin) ?: return null
+        val verifiedRole = backend.verifyStaffPin(pin) ?: return null
         val current = profile
         if (current != null) {
             val updated = current.copy(role = verifiedRole)
