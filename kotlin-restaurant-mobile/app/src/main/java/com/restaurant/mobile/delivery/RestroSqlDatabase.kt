@@ -19,7 +19,7 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         const val DATABASE_NAME = "restro_delivery.db"
-        const val DATABASE_VERSION = 3
+        const val DATABASE_VERSION = 4
 
         // Table Names
         const val TABLE_USERS = "users"
@@ -30,6 +30,8 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         const val TABLE_REVIEWS = "reviews"
         const val TABLE_OTPS = "otps"
         const val TABLE_STAFF_PINS = "staff_pins"
+        const val TABLE_BOOKINGS = "table_bookings"
+        const val TABLE_TABLE_BOOKINGS = TABLE_BOOKINGS
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -157,18 +159,40 @@ class RestroSqlDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             );
             """.trimIndent()
         )
+
+        // Table Bookings Table
+        createTableBookingsTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_STAFF_PINS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_OTPS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_REVIEWS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_ADDRESSES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_ORDERS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_DISHES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_RESTAURANTS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
-        onCreate(db)
+        if (oldVersion < 4) {
+            createTableBookingsTable(db)
+        }
+    }
+
+    private fun createTableBookingsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_BOOKINGS (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                user_phone TEXT NOT NULL,
+                table_id TEXT NOT NULL,
+                table_number TEXT NOT NULL,
+                booking_date TEXT NOT NULL,
+                time_slot TEXT NOT NULL,
+                party_size INTEGER NOT NULL CHECK (party_size > 0),
+                seating_area TEXT NOT NULL DEFAULT 'Main Dining Room',
+                special_requests TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'CONFIRMED',
+                created_at TEXT NOT NULL
+            );
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_table_bookings_date_slot ON $TABLE_BOOKINGS (booking_date, time_slot);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_table_bookings_table_id ON $TABLE_BOOKINGS (table_id);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_table_bookings_user_id ON $TABLE_BOOKINGS (user_id);")
     }
 
     // -------------------------------------------------------------

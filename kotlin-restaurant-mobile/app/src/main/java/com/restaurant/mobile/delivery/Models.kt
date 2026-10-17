@@ -169,3 +169,32 @@ data class TrackingResponse(
     val notificationAlert: String? = null,
     val updatedAt: String = ""
 )
+
+object TableBookingStatus {
+    const val CONFIRMED = "CONFIRMED"
+    const val SEATED = "SEATED"
+    const val COMPLETED = "COMPLETED"
+    const val CANCELLED = "CANCELLED"
+
+    val ALL = listOf(CONFIRMED, SEATED, COMPLETED, CANCELLED)
+}
+
+data class TableBooking(
+    val id: String = UUID.randomUUID().toString(),
+    val userId: String,
+    val userName: String,
+    val userPhone: String,
+    val tableId: String,
+    val tableNumber: String,
+    val bookingDate: String,
+    val timeSlot: String,
+    val partySize: Int,
+    val seatingArea: String = "Main Dining Room",
+    val specialRequests: String = "",
+    val status: String = TableBookingStatus.CONFIRMED,
+    val createdAt: String = Instant.now().toString(),
+) {
+    companion object {
+        fun generateId(): String = "TB-${UUID.randomUUID().toString().take(8).uppercase()}"
+    }
+}
